@@ -5,9 +5,9 @@ export function Hero() {
     <div className="hero-glow" aria-hidden="true" />
     <div className="wrap hero-grid">
       <div className="hero-copy">
-        <p className="kicker">Unofficial World of Warcraft community project</p>
-        <h1 id="hero-title">Let the players<br /><span>shape the conversation.</span></h1>
-        <p className="intro">Vote on the biggest questions surrounding WoW Forever. Community polls, verified players, and public results built for discussion.</p>
+        <p className="kicker">World of Warcraft: Forever · Community Voting Hub</p>
+        <h1 id="hero-title">A place for players<br /><span>to be heard.</span></h1>
+        <p className="intro">ForeverVote is an independent community polling hub for the biggest questions surrounding World of Warcraft: Forever. Verified players, one vote per poll, and public results built for discussion.</p>
         <div className="hero-actions">
           <a className="button primary" href="#polls">Browse polls</a>
           <a className="button secondary" href="#about">How ForeverVote works</a>
@@ -18,7 +18,7 @@ export function Hero() {
         </div>
       </div>
       <div className="hero-emblem">
-        <EmblemImage className="hero-logo" priority alt="ForeverVote — Voice of the Community" />
+        <EmblemImage className="hero-logo" priority alt="ForeverVote — Community Voting Hub" />
       </div>
     </div>
   </section>;
