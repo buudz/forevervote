@@ -1,7 +1,7 @@
 const statusItems = [
-  { number: "01", title: "Battle.net identity", detail: "OAuth integration in progress" },
-  { number: "02", title: "One vote per poll", detail: "Database integrity already enforced" },
-  { number: "03", title: "Public results", detail: "No synthetic votes or fake activity" }
+  { number: "01", title: "Battle.net login", detail: "Ready for live OAuth testing" },
+  { number: "02", title: "Profile checks", detail: "WoW namespaces inspected after login" },
+  { number: "03", title: "Voting locked", detail: "Supabase voting connects after verification" }
 ];
 
 export function StatusStrip() {
