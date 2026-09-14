@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "assets": "node scripts/build-assets.mjs",
+    "predev": "npm run assets",
     "dev": "next dev",
+    "prebuild": "npm run assets",
     "build": "next build",
     "start": "next start"
   },
