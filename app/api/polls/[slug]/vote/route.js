@@ -7,7 +7,7 @@ function jsonError(code, status) {
   return NextResponse.json({ ok: false, error: code }, { status });
 }
 
-export async function POST(request, { params }) {
+export async function POST(request, context) {
   const session = readSignedSession(request.cookies.get(SESSION_COOKIE)?.value);
 
   if (!session?.user?.battlenetAccountId) {
@@ -18,17 +18,18 @@ export async function POST(request, { params }) {
     return jsonError("classic_profile_required", 403);
   }
 
+  const { slug } = await context.params;
   const body = await request.json().catch(() => null);
   const optionId = body?.optionId;
 
-  if (!optionId || typeof optionId !== "string") {
+  if (!slug || !optionId || typeof optionId !== "string") {
     return jsonError("invalid_option", 400);
   }
 
   try {
     const user = await ensureUserFromSession(session);
     const vote = await castVote({
-      pollSlug: params.slug,
+      pollSlug: slug,
       optionId,
       userId: user.id
     });
