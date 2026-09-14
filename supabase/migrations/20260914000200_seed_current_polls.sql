@@ -7,7 +7,7 @@ alter table public.polls drop constraint if exists polls_slug_check;
 alter table public.polls add constraint polls_slug_check
   check (slug is null or slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$');
 
-create unique index if not exists polls_slug_unique_idx on public.polls(slug) where slug is not null;
+create unique index if not exists polls_slug_unique_idx on public.polls(slug);
 
 alter table public.polls drop constraint if exists polls_category_check;
 alter table public.polls add constraint polls_category_check
