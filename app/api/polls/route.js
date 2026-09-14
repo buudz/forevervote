@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { readSignedSession, SESSION_COOKIE } from "../../lib/auth/session";
-import { getOpenPollsForSession, normalizePollSort } from "../../lib/supabase/polls";
+import { getOpenPollsForSession, normalizePollSort, normalizePollVoteFilter } from "../../lib/supabase/polls";
 
 export async function GET(request) {
   const session = readSignedSession(request.cookies.get(SESSION_COOKIE)?.value);
   const sort = normalizePollSort(request.nextUrl.searchParams.get("sort"));
+  const voteFilter = normalizePollVoteFilter(request.nextUrl.searchParams.get("filter"));
 
   try {
-    const result = await getOpenPollsForSession(session, { sort });
+    const result = await getOpenPollsForSession(session, { sort, voteFilter });
     return NextResponse.json(result, {
       status: 200,
       headers: { "Cache-Control": "no-store" }
@@ -17,6 +18,7 @@ export async function GET(request) {
     return NextResponse.json({
       databaseReady: false,
       sort,
+      voteFilter,
       polls: [],
       error: "polls_unavailable"
     }, {
