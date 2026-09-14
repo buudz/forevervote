@@ -4,14 +4,14 @@ import { useState } from "react";
 
 const polls = [
   { id: "arena", category: "PvP", title: "Should WoW Forever eventually add Arena?", context: "A place for small-team competition, or a step away from the Classic experience?" },
-  { id: "raid-size", category: "Raids", title: "Should old 40-player raids stay 40-player?", context: "Preserve the scale of the originals, or make room for smaller groups?" },
-  { id: "new-class", category: "Classes", title: "Should Blizzard add a new class to Forever?", context: "New ways to play, new class fantasies, and a different balance to strike." },
+  { id: "raid-size", category: "PvE", title: "Should old 40-player raids stay 40-player?", context: "Preserve the scale of the originals, or make room for smaller groups?" },
+  { id: "new-class", category: "General", title: "Should Blizzard add a new class to Forever?", context: "New ways to play, new class fantasies, and a different balance to strike." },
   { id: "hardcore", category: "General", title: "Should Hardcore characters be able to transfer after death?", context: "A final end to the adventure, or a new beginning on a regular realm?" },
   { id: "flying", category: "World", title: "Should Forever ever add flying?", context: "Take to the skies, or keep exploration firmly on the ground?" },
   { id: "level-cap", category: "General", title: "Should Forever stay level 60 permanently?", context: "Expand the adventure without raising the level cap?" }
 ];
 
-const categories = ["All", ...new Set(polls.map((poll) => poll.category))];
+const categories = ["All", "PvE", "PvP", "World", "General"];
 
 export default function Home() {
   const [category, setCategory] = useState("All");
@@ -23,7 +23,7 @@ export default function Home() {
     url.hash = id;
     try {
       await navigator.clipboard.writeText(url.toString());
-      setShareMessage("Proposal link copied.");
+      setShareMessage("Poll link copied.");
     } catch {
       setShareMessage("Copy this link: " + url.toString());
     }
@@ -35,11 +35,11 @@ export default function Home() {
     <header className="site-header">
       <div className="wrap header-inner">
         <a className="brand" href="/" aria-label="ForeverVote home">
-          <img className="brand-crest" src="/forevervote-fv.svg" alt="" aria-hidden="true" />
+          <span className="brand-crest-frame" aria-hidden="true"><img className="brand-crest" src="/forevervote-emblem.webp" alt="" /></span>
           <span className="brand-copy"><strong>ForeverVote</strong><small>Community Council</small></span>
         </a>
         <nav className="nav" aria-label="Primary navigation">
-          <a href="#polls">Proposals</a>
+          <a href="#polls">Polls</a>
           <a href="#about">About</a>
           <span className="login-placeholder" aria-label="Battle.net login coming soon">Battle.net login soon</span>
         </nav>
@@ -53,9 +53,9 @@ export default function Home() {
           <div className="hero-copy">
             <p className="kicker">Unofficial World of Warcraft community project</p>
             <h1>Let the players<br /><span>shape the conversation.</span></h1>
-            <p className="intro">Vote on the biggest questions surrounding WoW Forever. Public proposals, verified players, and results built for community discussion.</p>
+            <p className="intro">Vote on the biggest questions surrounding WoW Forever. Community polls, verified players, and public results built for discussion.</p>
             <div className="hero-actions">
-              <a className="button primary" href="#polls">Browse proposals</a>
+              <a className="button primary" href="#polls">Browse polls</a>
               <a className="button secondary" href="#about">How ForeverVote works</a>
             </div>
             <div className="disclaimer-banner">
@@ -63,9 +63,8 @@ export default function Home() {
               <span>ForeverVote is not affiliated with, sponsored by, or endorsed by Blizzard Entertainment.</span>
             </div>
           </div>
-          <div className="hero-emblem" aria-hidden="true">
-            <div className="emblem-ring"><img src="/forevervote-fv.svg" alt="" /></div>
-            <div className="emblem-ribbon">Voice of the Community</div>
+          <div className="hero-emblem">
+            <img className="hero-logo" src="/forevervote-emblem.webp" alt="ForeverVote — Voice of the Community" />
           </div>
         </div>
       </section>
@@ -83,33 +82,33 @@ export default function Home() {
           <div className="section-heading">
             <div>
               <p className="kicker">The tavern board</p>
-              <h2>Proposed launch polls</h2>
-              <p>These are community questions, not confirmed Blizzard features.</p>
+              <h2>Polls to vote on</h2>
+              <p>Community questions about WoW Forever. Voting opens once Battle.net verification is ready.</p>
             </div>
-            <span className="count-badge">{polls.length} proposals</span>
+            <span className="count-badge">{polls.length} polls</span>
           </div>
 
-          <div className="filters" role="group" aria-label="Filter proposals by category">
+          <div className="filters" role="group" aria-label="Filter polls by category">
             {categories.map((item) => <button key={item} onClick={() => setCategory(item)} aria-pressed={category === item} className={category === item ? "filter active" : "filter"}>{item}</button>)}
           </div>
 
-          <p className="sr-only" aria-live="polite">{visible.length} proposals shown.</p>
+          <p className="sr-only" aria-live="polite">{visible.length} polls shown.</p>
 
           <div className="poll-grid">
             {visible.map((poll) => <article className="poll-card" id={poll.id} key={poll.id}>
               <div className="card-ornament" aria-hidden="true">◆</div>
               <div className="card-top">
                 <span className="category">{poll.category}</span>
-                <span className="draft">Proposed poll</span>
+                <span className="draft">Voting soon</span>
               </div>
               <h3>{poll.title}</h3>
               <p className="context">{poll.context}</p>
-              <div className="option-preview" aria-label="Proposed options">
+              <div className="option-preview" aria-label="Poll options">
                 <span>Yes</span><span>No</span>
               </div>
               <div className="card-footer">
                 <span>Voting opens when account verification is ready</span>
-                <button onClick={() => share(poll.id)} aria-label={"Share proposal: " + poll.title}>Share ↗</button>
+                <button onClick={() => share(poll.id)} aria-label={"Share poll: " + poll.title}>Share ↗</button>
               </div>
             </article>)}
           </div>
@@ -121,8 +120,8 @@ export default function Home() {
       <section id="about" className="about-section">
         <div className="wrap about-grid">
           <div className="about-title">
-            <p className="kicker">About ForeverVote</p>
-            <h2>Player feedback,<br />without pretending<br />to be official.</h2>
+            <p className="kicker">Independent community project</p>
+            <h2>About ForeverVote</h2>
           </div>
           <div className="about-panel">
             <p>ForeverVote is an independent, community-run fan project built to collect structured opinions about World of Warcraft and WoW Forever.</p>
@@ -139,7 +138,10 @@ export default function Home() {
 
     <footer className="footer">
       <div className="wrap footer-inner">
-        <div className="footer-brand"><img src="/forevervote-fv.svg" alt="" aria-hidden="true" /><span>ForeverVote</span></div>
+        <div className="footer-brand">
+          <span className="footer-crest-frame" aria-hidden="true"><img src="/forevervote-emblem.webp" alt="" /></span>
+          <span>ForeverVote</span>
+        </div>
         <p>Independent community fan project · Not affiliated with or endorsed by Blizzard Entertainment.</p>
         <a href="#main">Back to top ↑</a>
       </div>
