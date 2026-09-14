@@ -1,11 +1,11 @@
 const statusItems = [
-  { number: "01", title: "Battle.net login", detail: "Ready for live OAuth testing" },
-  { number: "02", title: "Profile checks", detail: "WoW namespaces inspected after login" },
-  { number: "03", title: "Voting locked", detail: "Supabase voting connects after verification" }
+  { number: "01", title: "Verified identity", detail: "Sign in securely with Battle.net" },
+  { number: "02", title: "Classic profile", detail: "Eligibility is checked before voting" },
+  { number: "03", title: "One vote per poll", detail: "Changing your choice updates your vote" }
 ];
 
 export function StatusStrip() {
-  return <section className="status-strip" aria-label="Project status">
+  return <section className="status-strip" aria-label="Voting principles">
     <div className="wrap status-grid">
       {statusItems.map((item) => <div key={item.number}>
         <strong>{item.number}</strong>
