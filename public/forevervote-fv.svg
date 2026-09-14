@@ -1,0 +1,31 @@
+<svg width="320" height="320" viewBox="0 0 320 320" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">ForeverVote FV crest</title>
+  <desc id="desc">A circular antique gold crest with the letters F and V.</desc>
+  <defs>
+    <linearGradient id="gold" x1="70" y1="42" x2="246" y2="276" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF1AF"/>
+      <stop offset="0.24" stop-color="#D9A63E"/>
+      <stop offset="0.55" stop-color="#8B5A17"/>
+      <stop offset="0.76" stop-color="#E6BB55"/>
+      <stop offset="1" stop-color="#6B4213"/>
+    </linearGradient>
+    <radialGradient id="face" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(122 98) rotate(55) scale(190)">
+      <stop stop-color="#273340"/>
+      <stop offset="0.58" stop-color="#111923"/>
+      <stop offset="1" stop-color="#080D12"/>
+    </radialGradient>
+    <filter id="shadow" x="14" y="14" width="292" height="292" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="7" stdDeviation="8" flood-color="#000000" flood-opacity="0.55"/>
+    </filter>
+  </defs>
+  <g filter="url(#shadow)">
+    <circle cx="160" cy="160" r="132" fill="#090D12" stroke="url(#gold)" stroke-width="7"/>
+    <circle cx="160" cy="160" r="116" fill="url(#face)" stroke="#6B481C" stroke-width="2"/>
+    <path d="M160 29L169 43L188 39L193 57L213 58L212 78L231 84L224 103L241 114L229 131L244 146L228 160L241 176L224 188L231 207L211 213L213 233L193 234L188 253L169 248L160 264L150 248L132 253L126 234L106 233L108 213L89 207L96 188L79 176L93 160L78 146L92 131L80 114L97 103L90 84L109 78L108 58L128 57L132 39L151 43L160 29Z" stroke="#C79434" stroke-opacity="0.52" stroke-width="2"/>
+    <path d="M99 90H176L170 111H128V145H165L159 165H128V224H101V90H99Z" fill="url(#gold)"/>
+    <path d="M158 90H190L214 174L238 90H268L229 225H198L158 90Z" fill="url(#gold)"/>
+    <path d="M90 245C113 260 136 267 160 267C185 267 208 260 230 245" stroke="#E2B552" stroke-width="3" stroke-linecap="round"/>
+    <path d="M95 75C117 60 138 53 160 53C182 53 204 60 225 75" stroke="#E2B552" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="160" cy="160" r="102" stroke="#E8C464" stroke-opacity="0.2"/>
+  </g>
+</svg>
