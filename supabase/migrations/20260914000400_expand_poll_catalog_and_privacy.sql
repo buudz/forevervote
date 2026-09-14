@@ -12,7 +12,10 @@ alter table public.poll_options drop constraint if exists poll_options_position_
 alter table public.poll_options add constraint poll_options_position_check
   check (position between 1 and 20);
 
--- Existing neutral options were created before is_neutral existed.
+-- Controlled maintenance: existing open options may only receive neutral metadata/text
+-- through this migration. The normal app trigger remains enabled afterward.
+alter table public.poll_options disable trigger guard_poll_options;
+
 update public.poll_options
 set is_neutral = true
 where lower(btrim(text)) in ('don''t care', 'no preference', 'undecided', 'no strong opinion');
@@ -169,6 +172,8 @@ join public.polls on polls.slug = seeded_options.slug
 on conflict (poll_id, position) do update set
   text = excluded.text,
   is_neutral = excluded.is_neutral;
+
+alter table public.poll_options enable trigger guard_poll_options;
 
 update public.polls
 set status = 'open'
