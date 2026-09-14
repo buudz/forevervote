@@ -1,16 +1,16 @@
-# ForeverVote voting rollout checklist
+# ForeverVote production voting smoke test
 
-Before testing live voting in production:
+The database schema, vote integrity constraints, API routes, and UI voting path are implemented. Re-run this checklist after database, environment, or voting changes.
 
-1. Add Vercel Production env vars:
-   - `SUPABASE_URL`
-   - `SUPABASE_SERVICE_ROLE_KEY`
-2. Run `supabase/migrations/20260914000200_seed_current_polls.sql` in Supabase after the original foundation migration.
-3. Redeploy the current production commit if env vars were added after deployment.
-4. Log in with Battle.net.
-5. Visit `/api/polls` and confirm it returns `databaseReady: true` and six open polls.
-6. Click a poll option on the homepage.
-7. Refresh and confirm the selected vote is still marked.
-8. Click the other option and confirm the vote changes instead of creating a duplicate.
+- [ ] Confirm Vercel Production has `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
+- [ ] Confirm all checked-in Supabase migrations have been applied.
+- [ ] Visit `/api/polls` and confirm `databaseReady: true` and the expected open polls.
+- [ ] Log in with an eligible Battle.net / Classic profile.
+- [ ] Cast one vote and refresh; confirm the selected option remains marked.
+- [ ] Change the vote; confirm it updates rather than creating a second vote.
+- [ ] Confirm a logged-out request to the vote endpoint is rejected.
+- [ ] Confirm a non-Classic session is rejected.
+- [ ] Confirm `/api/admin/stats` is inaccessible without configured admin authorization.
+- [ ] Confirm admin stats show zero duplicate vote groups.
 
-Voting remains limited to logged-in sessions with `hasClassicProfile: true`.
+Voting remains limited to signed-in sessions with `hasClassicProfile: true`. Database constraints also enforce one vote per user per poll, option/poll consistency, verified users, and open-poll status.

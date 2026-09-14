@@ -2,20 +2,37 @@
 
 ## Battle.net OAuth
 
-- Client secret must live only in Vercel environment variables.
+- Client secret lives only in server-side environment variables.
 - OAuth token exchange happens server-side only.
-- OAuth access tokens are not stored in the browser cookie.
-- The browser session cookie is HttpOnly, SameSite=Lax, and signed with `SESSION_SECRET`.
+- OAuth access tokens are not stored in the browser session.
+- The browser session cookie is HttpOnly, SameSite=Lax, Secure in production, signed with `SESSION_SECRET`, and expires after seven days.
 - OAuth `state` is generated per login attempt and stored in a short-lived HttpOnly cookie.
+- The callback derives the stable Battle.net account ID and WoW profile eligibility from Blizzard responses.
+- Retail and Classic profile namespaces are derived from the configured Battle.net region.
 
-## Current limitation
+## Voting
 
-This implementation is for login/profile inspection only. It does not yet persist users to Supabase and it does not enable voting.
+- The browser never supplies its own ForeverVote user ID.
+- A signed session must contain a Battle.net account ID and Classic eligibility before the vote route proceeds.
+- The server upserts the Battle.net-backed user using the service-role credential.
+- The database enforces one vote per user per poll.
+- The database foreign key enforces that the selected option belongs to the poll.
+- Database triggers reject votes by unverified users and reject voting on non-open polls.
+- Browser database roles have RLS enabled and no direct table privileges.
+- The Supabase service-role key is used only from server code.
 
-## Before enabling voting
+## Admin access
 
-- Confirm what Blizzard returns for retail and Classic profile namespaces.
-- Decide the exact eligibility rule for voting.
-- Persist the validated Battle.net identity server-side.
-- Use the Supabase service role only from server routes.
-- Never trust a user id, BattleTag, vote count, or eligibility flag sent by the browser.
+- Admin stats require either a configured bearer token or an explicitly allow-listed Battle.net account ID.
+- The admin endpoint is no-store and returns no raw Battle.net account identifiers.
+
+## Launch hygiene
+
+Before a broad public launch:
+
+- confirm the Battle.net client secret and `SESSION_SECRET` are current and private;
+- confirm all production environment variables are scoped correctly;
+- re-run the OAuth and voting smoke-test checklists;
+- verify the latest GitHub build is green;
+- configure a privacy/support contact and a deletion-request process;
+- avoid adding analytics, trackers, comments, or other data collection without updating the privacy/compliance baseline.
