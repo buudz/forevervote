@@ -5,7 +5,7 @@ export function SiteFooter() {
         <span className="footer-mark" aria-hidden="true">FV</span>
         <span>ForeverVote</span>
       </div>
-      <p>Independent community fan project · Not affiliated with or endorsed by Blizzard Entertainment.</p>
+      <p>Privacy/contact: <a href="mailto:WowForeverVote@gmail.com">WowForeverVote@gmail.com</a></p>
       <a href="#main">Back to top ↑</a>
     </div>
   </footer>;
