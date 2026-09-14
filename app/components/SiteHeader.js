@@ -1,11 +1,10 @@
 import { AuthStatus } from "./AuthStatus";
-import { EmblemImage } from "./EmblemImage";
 
 export function SiteHeader() {
   return <header className="site-header">
     <div className="wrap header-inner">
       <a className="brand" href="/" aria-label="ForeverVote home">
-        <EmblemImage frameClassName="brand-crest-frame" className="brand-crest" />
+        <span className="brand-mark" aria-hidden="true">FV</span>
         <span className="brand-copy">
           <strong>ForeverVote</strong>
           <small>World of Warcraft: Forever · Community Voting Hub</small>
