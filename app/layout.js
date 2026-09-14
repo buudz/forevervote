@@ -2,7 +2,7 @@ import "./globals.css";
 
 export const metadata = {
   title: "ForeverVote — Your voice. Azeroth's future.",
-  description: "An independent World of Warcraft community polling project. Explore proposed launch polls while verified voting is being built."
+  description: "An independent World of Warcraft community polling project for WoW Forever discussions, verified voting, and public results."
 };
 
 export default function RootLayout({ children }) {
