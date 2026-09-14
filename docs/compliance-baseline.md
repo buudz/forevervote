@@ -24,9 +24,9 @@ If analytics is added later, prefer a privacy-friendly setup first. If any non-e
 
 ## User deletion / privacy contact
 
-Before a public launch, add one calm privacy contact in the About or Privacy section, for example:
+Public contact line:
 
-`privacy@forevervote.com`
+`WowForeverVote@gmail.com`
 
 Users should be able to ask for access, correction, or deletion of their stored Battle.net identity and votes. Deleting a user should either remove their votes or anonymize them, depending on the final privacy policy choice.
 
@@ -43,3 +43,9 @@ Suggested wording:
 Do not add comments to the MVP by default.
 
 Comments may increase activity, but they also require moderation tools, abuse reporting, spam handling, deletion workflows, and a clearer privacy/content policy. A lighter alternative is to allow one short rationale when a user submits a poll proposal, while keeping voting pages clean.
+
+## Poll creation baseline
+
+Every poll needs a title and a short rationale before publication. After a poll leaves draft, the slug, title, and rationale are locked by the database trigger so vote meaning cannot be changed later.
+
+Polls may use fixed Yes/No/Don't care options or a custom fixed answer set. A future poll-creator UI can expose an `allow_custom_answers` toggle, but the MVP should keep user-submitted free-form answers off by default until moderation and spam controls exist.

@@ -5,9 +5,22 @@ import { pollCategories, polls as staticPolls, withFallbackOptions } from "../da
 import { PollCard } from "./PollCard";
 
 const fallbackPolls = staticPolls.map(withFallbackOptions);
+const sortOptions = [
+  { value: "explore", label: "Explore" },
+  { value: "popular", label: "Popular" },
+  { value: "newest", label: "Newest" },
+  { value: "oldest", label: "Oldest" }
+];
+const voteFilterOptions = [
+  { value: "all", label: "All" },
+  { value: "unvoted", label: "Unvoted" },
+  { value: "voted", label: "Voted" }
+];
 
 export function PollsSection() {
   const [category, setCategory] = useState("All");
+  const [sort, setSort] = useState("explore");
+  const [voteFilter, setVoteFilter] = useState("all");
   const [shareMessage, setShareMessage] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [auth, setAuth] = useState({ loading: true, authenticated: false });
@@ -17,11 +30,16 @@ export function PollsSection() {
   const authReady = !auth.loading;
   const canVote = Boolean(auth.authenticated && auth.wowProfile?.hasClassicProfile && pollState.databaseReady);
 
-  async function loadAuthAndPolls() {
+  async function loadAuthAndPolls(nextSort = sort, nextVoteFilter = voteFilter, active = true) {
+    const params = new URLSearchParams({ sort: nextSort, filter: nextVoteFilter });
     const [authResponse, pollsResponse] = await Promise.all([
       fetch("/api/auth/me", { cache: "no-store" }),
-      fetch("/api/polls", { cache: "no-store" })
+      fetch(`/api/polls?${params.toString()}`, { cache: "no-store" })
     ]);
+
+    if (!active) {
+      return;
+    }
 
     const authData = await authResponse.json();
     const pollsData = await pollsResponse.json();
@@ -41,7 +59,8 @@ export function PollsSection() {
   useEffect(() => {
     let active = true;
 
-    loadAuthAndPolls().catch(() => {
+    setPollState((current) => ({ ...current, loading: true }));
+    loadAuthAndPolls(sort, voteFilter, active).catch(() => {
       if (active) {
         setAuth({ loading: false, authenticated: false });
         setPollState({ loading: false, databaseReady: false, polls: fallbackPolls });
@@ -52,21 +71,29 @@ export function PollsSection() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [sort, voteFilter]);
 
   const visiblePolls = useMemo(() => {
     return pollState.polls.filter((poll) => category === "All" || poll.category === category);
   }, [category, pollState.polls]);
 
-  async function sharePoll(id) {
-    const url = new URL(window.location.href);
-    url.hash = id;
+  async function sharePoll(poll) {
+    const slug = poll.slug || poll.id;
+    const pollUrl = new URL(`/polls/${slug}`, window.location.origin).toString();
+    const imageUrl = new URL(`/api/share/poll/${slug}`, window.location.origin).toString();
+    const text = `${poll.title}\n${poll.rationale || poll.context || "Vote on ForeverVote."}`;
 
     try {
-      await navigator.clipboard.writeText(url.toString());
-      setShareMessage("Poll link copied.");
+      if (navigator.share) {
+        await navigator.share({ title: poll.title, text, url: pollUrl });
+        setShareMessage("Share sheet opened.");
+        return;
+      }
+
+      await navigator.clipboard.writeText(`${text}\n\nVote here: ${pollUrl}\nShare image: ${imageUrl}`);
+      setShareMessage("Poll share link copied. The link includes a preview image for social posts.");
     } catch {
-      setShareMessage("Copy this link: " + url.toString());
+      setShareMessage("Copy this link: " + pollUrl);
     }
   }
 
@@ -91,7 +118,7 @@ export function PollsSection() {
         throw new Error(data.error || "vote_failed");
       }
 
-      await loadAuthAndPolls();
+      await loadAuthAndPolls(sort, voteFilter);
       setStatusMessage("Vote saved.");
     } catch (error) {
       setStatusMessage(error.message === "classic_profile_required"
@@ -115,6 +142,14 @@ export function PollsSection() {
 
       <div className="filters" role="group" aria-label="Filter polls by category">
         {pollCategories.map((item) => <button key={item} onClick={() => setCategory(item)} aria-pressed={category === item} className={category === item ? "filter active" : "filter"}>{item}</button>)}
+      </div>
+
+      <div className="filters" role="group" aria-label="Sort polls">
+        {sortOptions.map((item) => <button key={item.value} onClick={() => setSort(item.value)} aria-pressed={sort === item.value} className={sort === item.value ? "filter active" : "filter"}>{item.label}</button>)}
+      </div>
+
+      <div className="filters" role="group" aria-label="Show voted or unvoted polls">
+        {voteFilterOptions.map((item) => <button key={item.value} onClick={() => setVoteFilter(item.value)} aria-pressed={voteFilter === item.value} className={voteFilter === item.value ? "filter active" : "filter"}>{item.label}</button>)}
       </div>
 
       <p className="sr-only" aria-live="polite">{visiblePolls.length} polls shown.</p>
