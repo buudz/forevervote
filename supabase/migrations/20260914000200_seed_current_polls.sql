@@ -1,5 +1,5 @@
 -- Seed the initial ForeverVote poll board and align live poll categories with the UI.
--- Run after 20260914000100_polling_foundation.sql.
+-- Run after the polling foundation migration.
 
 alter table public.polls add column if not exists slug text;
 
@@ -21,7 +21,7 @@ on conflict (battlenet_account_id) do update set
   wow_verified = true,
   wow_verified_at = coalesce(public.users.wow_verified_at, now());
 
-with system_user as (
+with seed_author as (
   select id from public.users where battlenet_account_id = 'forevervote-system'
 ), seeded(slug, category, title, description) as (
   values
@@ -33,8 +33,8 @@ with system_user as (
     ('level-cap', 'General', 'Should Forever stay level 60 permanently?', 'Expand the adventure without raising the level cap?')
 )
 insert into public.polls (creator_id, slug, category, title, description, status)
-select system_user.id, seeded.slug, seeded.category, seeded.title, seeded.description, 'draft'
-from seeded cross join system_user
+select seed_author.id, seeded.slug, seeded.category, seeded.title, seeded.description, 'draft'
+from seeded cross join seed_author
 on conflict (slug) do update set
   category = excluded.category,
   title = excluded.title,
