@@ -6,7 +6,10 @@ export function SiteHeader() {
     <div className="wrap header-inner">
       <a className="brand" href="/" aria-label="ForeverVote home">
         <EmblemImage frameClassName="brand-crest-frame" className="brand-crest" />
-        <span className="brand-copy"><strong>ForeverVote</strong><small>Community Council</small></span>
+        <span className="brand-copy">
+          <strong>ForeverVote</strong>
+          <small>World of Warcraft: Forever · Community Voting Hub</small>
+        </span>
       </a>
       <nav className="nav" aria-label="Primary navigation">
         <a href="#polls">Polls</a>
