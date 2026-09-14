@@ -9,9 +9,10 @@ alter table public.polls add constraint polls_slug_check
 
 create unique index if not exists polls_slug_unique_idx on public.polls(slug);
 
+-- Keep the older backend category values valid for any existing rows, while allowing the new UI category PvE.
 alter table public.polls drop constraint if exists polls_category_check;
 alter table public.polls add constraint polls_category_check
-  check (category in ('PvE','PvP','World','General'));
+  check (category in ('WoW Forever','Classes','PvP','Raids','Dungeons','World','Professions','QoL','Items','General','PvE'));
 
 insert into public.users (battlenet_account_id, battletag, wow_verified, wow_verified_at)
 values ('forevervote-system', 'ForeverVote#0000', true, now())
