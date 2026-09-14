@@ -22,7 +22,7 @@ export function PollCard({ poll, canVote, authReady, databaseReady, onShare, onV
       <span className="draft">{databaseReady ? `${poll.totalVotes || 0} votes` : "Voting soon"}</span>
     </div>
     <h3>{poll.title}</h3>
-    <p className="context">{poll.context}</p>
+    <p className="context">{poll.rationale || poll.context}</p>
     <div className="option-preview" aria-label="Poll options">
       {poll.options.map((option) => {
         const selected = poll.userVoteOptionId === option.id;
@@ -44,7 +44,7 @@ export function PollCard({ poll, canVote, authReady, databaseReady, onShare, onV
     </div>
     <div className="card-footer">
       <span>{poll.userVoteOptionId ? "Your vote is saved. Click another option to change it." : disabledReason || "Choose one option to vote."}</span>
-      <button onClick={() => onShare(poll.slug || poll.id)} aria-label={"Share poll: " + poll.title}>Share ↗</button>
+      <button onClick={() => onShare(poll)} aria-label={"Share poll: " + poll.title}>Share ↗</button>
     </div>
   </article>;
 }
