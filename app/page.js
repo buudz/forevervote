@@ -3,19 +3,37 @@
 import { useState } from "react";
 
 const polls = [
-  { id: "arena", category: "PvP", title: "Should WoW Forever eventually add Arena?", context: "A place for small-team competition, or a step away from the Classic experience?" },
-  { id: "raid-size", category: "PvE", title: "Should old 40-player raids stay 40-player?", context: "Preserve the scale of the originals, or make room for smaller groups?" },
-  { id: "new-class", category: "General", title: "Should Blizzard add a new class to Forever?", context: "New ways to play, new class fantasies, and a different balance to strike." },
-  { id: "hardcore", category: "General", title: "Should Hardcore characters be able to transfer after death?", context: "A final end to the adventure, or a new beginning on a regular realm?" },
-  { id: "flying", category: "World", title: "Should Forever ever add flying?", context: "Take to the skies, or keep exploration firmly on the ground?" },
-  { id: "level-cap", category: "General", title: "Should Forever stay level 60 permanently?", context: "Expand the adventure without raising the level cap?" }
+  {
+    id: "first-class",
+    category: "General",
+    title: "What class are you playing first in WoW Forever?",
+    context: "Pick the first class you plan to level when Forever launches.",
+    options: ["Warrior", "Paladin", "Hunter", "Rogue", "Priest", "Shaman", "Mage", "Warlock", "Druid"],
+    featured: true
+  },
+  { id: "arena", category: "PvP", title: "Should WoW Forever eventually add Arena?", context: "A place for small-team competition, or a step away from the Classic experience?", options: ["Yes", "No"] },
+  { id: "raid-size", category: "PvE", title: "Should old 40-player raids stay 40-player?", context: "Preserve the scale of the originals, or make room for smaller groups?", options: ["Yes", "No"] },
+  { id: "new-class", category: "General", title: "Should Blizzard add a new class to Forever?", context: "New ways to play, new class fantasies, and a different balance to strike.", options: ["Yes", "No"] },
+  { id: "hardcore", category: "General", title: "Should Hardcore characters be able to transfer after death?", context: "A final end to the adventure, or a new beginning on a regular realm?", options: ["Yes", "No"] },
+  { id: "flying", category: "World", title: "Should Forever ever add flying?", context: "Take to the skies, or keep exploration firmly on the ground?", options: ["Yes", "No"] },
+  { id: "level-cap", category: "General", title: "Should Forever stay level 60 permanently?", context: "Expand the adventure without raising the level cap?", options: ["Yes", "No"] }
 ];
 
 const categories = ["All", "PvE", "PvP", "World", "General"];
+const pollCategories = ["PvE", "PvP", "World", "General"];
+const MAX_OPTIONS = 12;
 
 export default function Home() {
   const [category, setCategory] = useState("All");
   const [shareMessage, setShareMessage] = useState("");
+  const [builderMessage, setBuilderMessage] = useState("");
+  const [builder, setBuilder] = useState({
+    question: "",
+    description: "",
+    category: "General",
+    options: ["", ""]
+  });
+
   const visible = polls.filter((poll) => category === "All" || poll.category === category);
 
   async function share(id) {
@@ -29,17 +47,44 @@ export default function Home() {
     }
   }
 
+  function updateOption(index, value) {
+    setBuilder((current) => ({
+      ...current,
+      options: current.options.map((option, optionIndex) => optionIndex === index ? value : option)
+    }));
+  }
+
+  function addOption() {
+    setBuilder((current) => current.options.length >= MAX_OPTIONS
+      ? current
+      : { ...current, options: [...current.options, ""] });
+  }
+
+  function removeOption(index) {
+    setBuilder((current) => current.options.length <= 2
+      ? current
+      : { ...current, options: current.options.filter((_, optionIndex) => optionIndex !== index) });
+  }
+
+  function submitBuilder(event) {
+    event.preventDefault();
+    setBuilderMessage("Poll publishing will unlock with verified Battle.net login. Nothing has been published yet.");
+  }
+
+  const previewOptions = builder.options.map((option, index) => option.trim() || `Option ${index + 1}`);
+
   return <>
     <a className="skip" href="#main">Skip to content</a>
 
     <header className="site-header">
       <div className="wrap header-inner">
         <a className="brand" href="/" aria-label="ForeverVote home">
-          <span className="brand-crest-frame" aria-hidden="true"><img className="brand-crest" src="/forevervote-emblem.webp" alt="" /></span>
-          <span className="brand-copy"><strong>ForeverVote</strong><small>Community Council</small></span>
+          <img className="brand-crest" src="/forevervote-emblem-transparent.webp" alt="" aria-hidden="true" />
+          <span className="brand-name"><span>Forever</span><strong>Vote</strong></span>
         </a>
         <nav className="nav" aria-label="Primary navigation">
           <a href="#polls">Polls</a>
+          <a href="#create">Create poll</a>
           <a href="#about">About</a>
           <span className="login-placeholder" aria-label="Battle.net login coming soon">Battle.net login soon</span>
         </nav>
@@ -56,7 +101,7 @@ export default function Home() {
             <p className="intro">Vote on the biggest questions surrounding WoW Forever. Community polls, verified players, and public results built for discussion.</p>
             <div className="hero-actions">
               <a className="button primary" href="#polls">Browse polls</a>
-              <a className="button secondary" href="#about">How ForeverVote works</a>
+              <a className="button secondary" href="#create">Create a poll</a>
             </div>
             <div className="disclaimer-banner">
               <strong>Independent fan project.</strong>
@@ -64,7 +109,8 @@ export default function Home() {
             </div>
           </div>
           <div className="hero-emblem">
-            <img className="hero-logo" src="/forevervote-emblem.webp" alt="ForeverVote — Voice of the Community" />
+            <div className="emblem-aura" aria-hidden="true" />
+            <img className="hero-logo" src="/forevervote-emblem-transparent.webp" alt="FV — Voice of the Community" />
           </div>
         </div>
       </section>
@@ -81,9 +127,9 @@ export default function Home() {
         <div className="wrap">
           <div className="section-heading">
             <div>
-              <p className="kicker">The tavern board</p>
+              <p className="kicker">Community questions</p>
               <h2>Polls to vote on</h2>
-              <p>Community questions about WoW Forever. Voting opens once Battle.net verification is ready.</p>
+              <p>Voting opens once Battle.net verification is ready.</p>
             </div>
             <span className="count-badge">{polls.length} polls</span>
           </div>
@@ -95,16 +141,16 @@ export default function Home() {
           <p className="sr-only" aria-live="polite">{visible.length} polls shown.</p>
 
           <div className="poll-grid">
-            {visible.map((poll) => <article className="poll-card" id={poll.id} key={poll.id}>
+            {visible.map((poll) => <article className={poll.featured ? "poll-card featured" : "poll-card"} id={poll.id} key={poll.id}>
               <div className="card-ornament" aria-hidden="true">◆</div>
               <div className="card-top">
                 <span className="category">{poll.category}</span>
-                <span className="draft">Voting soon</span>
+                <span className="draft">{poll.featured ? "Starter poll" : "Voting soon"}</span>
               </div>
               <h3>{poll.title}</h3>
               <p className="context">{poll.context}</p>
-              <div className="option-preview" aria-label="Poll options">
-                <span>Yes</span><span>No</span>
+              <div className={poll.options.length > 2 ? "option-preview multi" : "option-preview"} aria-label="Poll options">
+                {poll.options.map((option) => <span key={option}>{option}</span>)}
               </div>
               <div className="card-footer">
                 <span>Voting opens when account verification is ready</span>
@@ -117,10 +163,96 @@ export default function Home() {
         </div>
       </section>
 
+      <section id="create" className="create-section">
+        <div className="wrap">
+          <div className="section-heading create-heading">
+            <div>
+              <p className="kicker">Build your question</p>
+              <h2>Create a poll</h2>
+              <p>Choose the question, category, context and your own voting options.</p>
+            </div>
+            <span className="count-badge">2–{MAX_OPTIONS} options</span>
+          </div>
+
+          <div className="builder-grid">
+            <form className="poll-builder" onSubmit={submitBuilder}>
+              <label>
+                <span>Poll question</span>
+                <input
+                  required
+                  minLength="10"
+                  maxLength="180"
+                  value={builder.question}
+                  onChange={(event) => setBuilder({ ...builder, question: event.target.value })}
+                  placeholder="What should the community vote on?"
+                />
+              </label>
+
+              <div className="builder-row">
+                <label>
+                  <span>Category</span>
+                  <select value={builder.category} onChange={(event) => setBuilder({ ...builder, category: event.target.value })}>
+                    {pollCategories.map((item) => <option key={item}>{item}</option>)}
+                  </select>
+                </label>
+                <label>
+                  <span>Description <small>optional</small></span>
+                  <input
+                    maxLength="1500"
+                    value={builder.description}
+                    onChange={(event) => setBuilder({ ...builder, description: event.target.value })}
+                    placeholder="Add context for voters"
+                  />
+                </label>
+              </div>
+
+              <fieldset className="option-fields">
+                <legend>Voting options</legend>
+                {builder.options.map((option, index) => <div className="option-field" key={index}>
+                  <span className="option-number">{String(index + 1).padStart(2, "0")}</span>
+                  <input
+                    required
+                    maxLength="100"
+                    value={option}
+                    onChange={(event) => updateOption(index, event.target.value)}
+                    placeholder={`Option ${index + 1}`}
+                    aria-label={`Poll option ${index + 1}`}
+                  />
+                  <button type="button" className="remove-option" onClick={() => removeOption(index)} disabled={builder.options.length <= 2} aria-label={`Remove option ${index + 1}`}>×</button>
+                </div>)}
+              </fieldset>
+
+              <div className="builder-actions">
+                <button type="button" className="button secondary compact" onClick={addOption} disabled={builder.options.length >= MAX_OPTIONS}>+ Add option</button>
+                <button type="submit" className="button primary compact">Prepare poll</button>
+              </div>
+              <p className="builder-note">Publishing will require a verified Battle.net identity once login is connected.</p>
+              <p className="builder-status" role="status">{builderMessage}</p>
+            </form>
+
+            <div className="builder-preview" aria-label="Poll preview">
+              <p className="preview-kicker">Live preview</p>
+              <article className="poll-card preview-card">
+                <div className="card-ornament" aria-hidden="true">◆</div>
+                <div className="card-top">
+                  <span className="category">{builder.category}</span>
+                  <span className="draft">Draft</span>
+                </div>
+                <h3>{builder.question.trim() || "Your poll question"}</h3>
+                <p className="context">{builder.description.trim() || "Add a short description so voters understand the question."}</p>
+                <div className={previewOptions.length > 2 ? "option-preview multi" : "option-preview"}>
+                  {previewOptions.map((option, index) => <span key={index}>{option}</span>)}
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="about" className="about-section">
         <div className="wrap about-grid">
           <div className="about-title">
-            <p className="kicker">Independent community project</p>
+            <p className="kicker">Independent fan project</p>
             <h2>About ForeverVote</h2>
           </div>
           <div className="about-panel">
@@ -139,7 +271,7 @@ export default function Home() {
     <footer className="footer">
       <div className="wrap footer-inner">
         <div className="footer-brand">
-          <span className="footer-crest-frame" aria-hidden="true"><img src="/forevervote-emblem.webp" alt="" /></span>
+          <img src="/forevervote-emblem-transparent.webp" alt="" aria-hidden="true" />
           <span>ForeverVote</span>
         </div>
         <p>Independent community fan project · Not affiliated with or endorsed by Blizzard Entertainment.</p>
