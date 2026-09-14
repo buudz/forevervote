@@ -1,4 +1,4 @@
-# VoteForever
+# ForeverVote
 
 Independent World of Warcraft community polling project.
 
