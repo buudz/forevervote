@@ -30,7 +30,7 @@ export function PollsSection() {
 
     if (!pollsResponse.ok || !pollsData.databaseReady) {
       setPollState({ loading: false, databaseReady: false, polls: fallbackPolls });
-      setStatusMessage("Poll database is not connected yet. Add Supabase env vars and run the poll seed migration.");
+      setStatusMessage("Live voting is temporarily unavailable. The polls remain visible while the service reconnects.");
       return;
     }
 
@@ -106,9 +106,9 @@ export function PollsSection() {
     <div className="wrap">
       <div className="section-heading">
         <div>
-          <p className="kicker">The tavern board</p>
+          <p className="kicker">Community polls</p>
           <h2 id="polls-title">Polls to vote on</h2>
-          <p>{pollState.databaseReady ? "Vote on community questions about WoW Forever." : "Community questions about WoW Forever. Voting opens once Supabase is connected."}</p>
+          <p>{pollState.databaseReady ? "Vote on community questions about World of Warcraft: Forever." : "Community questions about World of Warcraft: Forever. Live voting is temporarily unavailable."}</p>
         </div>
         <span className="count-badge">{pollState.polls.length} polls</span>
       </div>
