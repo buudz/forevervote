@@ -95,10 +95,15 @@ begin
     end if;
   end if;
 
-  if TG_OP = 'INSERT' or (new.status = 'open' and (TG_OP = 'INSERT' or old.status is distinct from 'open')) then
+  if TG_OP = 'INSERT' then
     select wow_verified into eligible from public.users where id = new.creator_id for share;
     if eligible is distinct from true then
-      raise exception 'Verified WoW profile required to create or publish polls' using errcode = '23514';
+      raise exception 'Verified WoW profile required to create polls' using errcode = '23514';
+    end if;
+  elsif new.status = 'open' and old.status is distinct from 'open' then
+    select wow_verified into eligible from public.users where id = new.creator_id for share;
+    if eligible is distinct from true then
+      raise exception 'Verified WoW profile required to publish polls' using errcode = '23514';
     end if;
   end if;
 
