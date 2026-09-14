@@ -1,4 +1,4 @@
-import { getPollShareData } from "../../../../../lib/supabase/polls";
+import { getPollShareData } from "../../../../lib/supabase/polls";
 
 export const dynamic = "force-dynamic";
 
