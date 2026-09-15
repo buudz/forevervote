@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 export function AuthStatus() {
-  const [auth, setAuth] = useState({ loading: true, authenticated: false });
+  const [auth, setAuth] = useState({ loading: true, authenticated: false, admin: false });
 
   useEffect(() => {
     let active = true;
@@ -17,7 +17,7 @@ export function AuthStatus() {
       })
       .catch(() => {
         if (active) {
-          setAuth({ loading: false, authenticated: false });
+          setAuth({ loading: false, authenticated: false, admin: false });
         }
       });
 
@@ -38,6 +38,7 @@ export function AuthStatus() {
   const verifiedLabel = hasClassicProfile ? "Classic profile found" : "Profile check pending";
 
   return <div className="auth-status" aria-label="Battle.net account status">
+    {auth.admin && <a className="auth-admin" href="/admin">Admin</a>}
     <span className="auth-user">
       <strong>{auth.user?.battletag || "Battle.net user"}</strong>
       <small>{verifiedLabel}</small>

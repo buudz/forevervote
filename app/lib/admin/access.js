@@ -1,4 +1,5 @@
 import { timingSafeEqual } from "crypto";
+import { encodeFilterValue, isSupabaseConfigured, supabaseRequest } from "../supabase/rest";
 
 function safeEqual(left, right) {
   const leftBuffer = Buffer.from(String(left || ""));
@@ -18,7 +19,36 @@ function getAllowedBattleNetAccountIds() {
     .filter(Boolean);
 }
 
-export function authorizeAdminRequest(request, session) {
+async function isDatabaseAdmin(accountId) {
+  if (!accountId || !isSupabaseConfigured()) {
+    return false;
+  }
+
+  try {
+    const rows = await supabaseRequest(
+      `/admin_accounts?select=battlenet_account_id&battlenet_account_id=eq.${encodeFilterValue(accountId)}&limit=1`
+    );
+    return Boolean(rows?.[0]?.battlenet_account_id);
+  } catch {
+    return false;
+  }
+}
+
+export async function isAdminSession(session) {
+  const accountId = session?.user?.battlenetAccountId;
+
+  if (!accountId) {
+    return false;
+  }
+
+  if (getAllowedBattleNetAccountIds().includes(accountId)) {
+    return true;
+  }
+
+  return isDatabaseAdmin(accountId);
+}
+
+export async function authorizeAdminRequest(request, session) {
   const configuredToken = process.env.ADMIN_TOKEN;
   const authorization = request.headers.get("authorization") || "";
   const bearerToken = authorization.startsWith("Bearer ") ? authorization.slice("Bearer ".length).trim() : null;
@@ -27,16 +57,13 @@ export function authorizeAdminRequest(request, session) {
     return { ok: true, method: "bearer" };
   }
 
-  const accountId = session?.user?.battlenetAccountId;
-  const allowedAccountIds = getAllowedBattleNetAccountIds();
-
-  if (accountId && allowedAccountIds.includes(accountId)) {
+  if (await isAdminSession(session)) {
     return { ok: true, method: "session" };
   }
 
   return {
     ok: false,
-    configured: Boolean(configuredToken || allowedAccountIds.length),
-    reason: configuredToken || allowedAccountIds.length ? "forbidden" : "admin_not_configured"
+    configured: Boolean(configuredToken || getAllowedBattleNetAccountIds().length || isSupabaseConfigured()),
+    reason: "forbidden"
   };
 }

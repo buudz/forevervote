@@ -15,13 +15,13 @@ function sameOrigin(request) {
   return !origin || origin === new URL(request.url).origin;
 }
 
-function getAdmin(request) {
+async function getAdmin(request) {
   const session = readSignedSession(request.cookies.get(SESSION_COOKIE)?.value);
   return authorizeAdminRequest(request, session);
 }
 
 export async function GET(request) {
-  const admin = getAdmin(request);
+  const admin = await getAdmin(request);
 
   if (!admin.ok) {
     return json({ ok: false, error: "admin_required" }, 403);
@@ -41,7 +41,7 @@ export async function POST(request) {
     return json({ ok: false, error: "invalid_origin" }, 403);
   }
 
-  const admin = getAdmin(request);
+  const admin = await getAdmin(request);
   if (!admin.ok) {
     return json({ ok: false, error: "admin_required" }, 403);
   }
