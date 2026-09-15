@@ -22,7 +22,7 @@ export async function generateMetadata({ params }) {
   }
 
   const pollUrl = `${SITE_URL}/polls/${poll.slug}`;
-  const imageUrl = `${SITE_URL}/api/share/poll/${poll.slug}?v=2`;
+  const imageUrl = `${SITE_URL}/api/share/poll/${poll.slug}.png?v=5`;
   const description = poll.rationale || "Vote on this ForeverVote community poll.";
 
   return {
@@ -33,7 +33,7 @@ export async function generateMetadata({ params }) {
       description,
       url: pollUrl,
       siteName: "ForeverVote",
-      images: [{ url: imageUrl, width: 1200, height: 630, alt: poll.title }],
+      images: [{ url: imageUrl, width: 1200, height: 630, alt: poll.title, type: "image/png" }],
       type: "article"
     },
     twitter: {

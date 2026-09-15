@@ -110,14 +110,21 @@ html{scroll-padding-top:102px}
 }
 
 .poll-grid{
-  grid-template-columns:minmax(0,960px);
-  justify-content:center;
+  grid-template-columns:minmax(0,1fr);
+  justify-content:stretch;
+  width:100%;
   gap:24px;
 }
 
 .poll-card{
   min-height:auto;
   padding:30px;
+}
+
+.poll-grid .poll-card:nth-child(even){
+  background:
+    radial-gradient(circle at 50% 0%,rgba(47,149,200,.145),transparent 34%),
+    linear-gradient(180deg,#082840,#071D30);
 }
 
 .poll-card h3{
