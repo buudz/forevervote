@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { authorizeAdminRequest } from "../../../lib/admin/access";
 import { readSignedSession, SESSION_COOKIE } from "../../../lib/auth/session";
 import {
-  editPollAdminCopy,
+  editPollAdmin,
   getAdminPollEditHistory,
   getAdminPollQueues,
   updatePollAdminState
@@ -72,6 +72,7 @@ export async function POST(request) {
     if (action === "edit") {
       const title = typeof body?.title === "string" ? body.title.trim() : "";
       const rationale = typeof body?.rationale === "string" ? body.rationale.trim() : "";
+      const allowMultipleAnswers = body?.allowMultipleAnswers === true;
 
       if (title.length < 10 || title.length > 180 || /[<>]/.test(title)) {
         return json({ ok: false, error: "invalid_title" }, 400);
@@ -81,10 +82,11 @@ export async function POST(request) {
         return json({ ok: false, error: "invalid_rationale" }, 400);
       }
 
-      const poll = await editPollAdminCopy({
+      const poll = await editPollAdmin({
         pollId,
         title,
         rationale,
+        allowMultipleAnswers,
         editorBattleNetAccountId: admin.session?.user?.battlenetAccountId || null,
         editorBattleTag: admin.session?.user?.battletag || (admin.method === "bearer" ? "Admin API token" : "Admin")
       });
@@ -104,9 +106,11 @@ export async function POST(request) {
           ? "trash_expired"
           : error.status === 409
             ? "poll_state_conflict"
-            : error.code === "23514"
-              ? "invalid_poll_copy"
-              : "admin_action_failed"
+            : error.code === "23514" && error.message?.includes("Voting mode cannot be changed after votes")
+              ? "voting_mode_locked"
+              : error.code === "23514"
+                ? "invalid_poll_copy"
+                : "admin_action_failed"
     }, error.status || 500);
   }
 }
