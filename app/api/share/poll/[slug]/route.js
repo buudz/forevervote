@@ -89,7 +89,7 @@ export async function GET(_request, context) {
   const titleLines = splitLines(poll.title, 30, 3);
   const titleFontSize = titleLines.length >= 3 ? 52 : 60;
   const titleLineHeight = titleLines.length >= 3 ? 58 : 66;
-  const optionsLabelY = 418;
+  const optionsLabelY = 408;
   const optionLabels = getOptionLabels(poll.options);
   const categoryWidth = Math.min(312, 122 + escapeXml(poll.category).length * 13);
 
@@ -135,9 +135,6 @@ export async function GET(_request, context) {
   ${titleLines.map((line, index) => `<text x='88' y='${272 + index * titleLineHeight}' font-family='Georgia, serif' font-weight='700' font-size='${titleFontSize}' fill='#F8F2D9'>${escapeXml(line)}</text>`).join("")}
   <text x='88' y='${optionsLabelY}' font-family='Arial, sans-serif' font-size='16' font-weight='800' letter-spacing='2.8' fill='#8F969B'>POLL OPTIONS</text>
   ${renderOptionChips(optionLabels, optionsLabelY + 20)}
-  <path d='M82 560h1036' stroke='#876733' stroke-opacity='.28'/>
-  <text x='88' y='598' font-family='Arial, sans-serif' font-size='18' fill='#718398'>www.forevervote.com</text>
-  <text x='1114' y='598' text-anchor='end' font-family='Arial, sans-serif' font-size='18' font-weight='800' letter-spacing='1.4' fill='#E4C98E'>VOTE NOW</text>
 </svg>`;
 
   return new Response(svg, {
