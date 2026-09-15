@@ -16,13 +16,28 @@ function truncate(value, maxChars) {
   return text.length > maxChars ? `${text.slice(0, maxChars - 1).trim()}…` : text;
 }
 
-function splitLines(value, maxChars, maxLines) {
-  const words = normalizeText(value).split(/\s+/).filter(Boolean);
+function splitLongWord(word, maxChars) {
+  if (word.length <= maxChars) {
+    return [word];
+  }
+
+  const chunks = [];
+  for (let index = 0; index < word.length; index += maxChars) {
+    chunks.push(word.slice(index, index + maxChars));
+  }
+  return chunks;
+}
+
+function wrapTitle(value, maxChars) {
+  const words = normalizeText(value)
+    .split(/\s+/)
+    .filter(Boolean)
+    .flatMap((word) => splitLongWord(word, maxChars));
+
   const lines = [];
   let current = "";
 
-  for (const rawWord of words) {
-    const word = rawWord.length > maxChars ? truncate(rawWord, maxChars) : rawWord;
+  for (const word of words) {
     const next = current ? `${current} ${word}` : word;
 
     if (next.length > maxChars && current) {
@@ -31,13 +46,9 @@ function splitLines(value, maxChars, maxLines) {
     } else {
       current = next;
     }
-
-    if (lines.length === maxLines) {
-      break;
-    }
   }
 
-  if (current && lines.length < maxLines) {
+  if (current) {
     lines.push(current);
   }
 
@@ -66,7 +77,7 @@ function OptionChip({ label, index }) {
   return <div style={{
     position: "absolute",
     left: 88 + column * 492,
-    top: 426 + row * 50,
+    top: 454 + row * 50,
     width: 456,
     height: 40,
     display: "flex",
@@ -93,10 +104,17 @@ export async function GET(_request, context) {
     return new Response("Poll not found", { status: 404 });
   }
 
-  const shareTitle = truncate(poll.title, 90);
-  const titleLines = splitLines(shareTitle, 34, 3);
-  const titleFontSize = titleLines.length >= 3 ? 48 : titleLines.length === 2 ? 54 : 60;
-  const titleLineHeight = titleLines.length >= 3 ? 54 : titleLines.length === 2 ? 61 : 66;
+  const titleLines = wrapTitle(poll.title, 31);
+  const titleFontSize =
+    titleLines.length >= 4 ? 40 :
+    titleLines.length === 3 ? 46 :
+    titleLines.length === 2 ? 52 :
+    58;
+  const titleLineHeight =
+    titleLines.length >= 4 ? 45 :
+    titleLines.length === 3 ? 51 :
+    titleLines.length === 2 ? 58 :
+    64;
   const optionLabels = getOptionLabels(poll.options);
   const categoryWidth = Math.min(312, 122 + normalizeText(poll.category).length * 13);
 
@@ -172,30 +190,39 @@ export async function GET(_request, context) {
 
       <div style={{
         position: "absolute",
-        right: 86,
-        top: 68,
-        width: 132,
-        height: 132,
+        right: 88,
+        top: 70,
+        width: 118,
+        height: 118,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        border: "1px solid rgba(188,152,84,.48)",
-        borderRadius: 22,
-        background: "radial-gradient(circle at 50% 40%, rgba(47,149,200,.12), rgba(4,16,26,.72) 72%)",
-        boxShadow: "0 12px 34px rgba(0,0,0,.28), inset 0 1px 0 rgba(228,201,142,.10)"
+        border: "1px solid rgba(188,152,84,.38)",
+        borderRadius: 59,
+        background: "radial-gradient(circle at 50% 42%, rgba(47,149,200,.12), rgba(4,16,26,.30) 58%, rgba(4,16,26,.04) 72%)",
+        boxShadow: "0 10px 28px rgba(0,0,0,.20), inset 0 0 0 5px rgba(188,152,84,.035)"
       }}>
         <img
           src={BRAND_MARK_URL}
-          width="108"
-          height="108"
+          width="94"
+          height="94"
           style={{
-            width: 108,
-            height: 108,
+            width: 94,
+            height: 94,
             objectFit: "contain"
           }}
           alt=""
         />
       </div>
+      <div style={{
+        position: "absolute",
+        right: 212,
+        top: 128,
+        width: 50,
+        height: 1,
+        display: "flex",
+        background: "linear-gradient(90deg, rgba(188,152,84,0), rgba(188,152,84,.44))"
+      }} />
 
       <div style={{
         position: "absolute",
@@ -221,9 +248,12 @@ export async function GET(_request, context) {
       <div style={{
         position: "absolute",
         left: 88,
-        top: 240,
+        top: 224,
+        width: 1010,
+        height: 184,
         display: "flex",
-        flexDirection: "column"
+        flexDirection: "column",
+        justifyContent: "center"
       }}>
         {titleLines.map((line, index) => <div key={`${line}-${index}`} style={{
           color: "#F8F2D9",
@@ -240,7 +270,7 @@ export async function GET(_request, context) {
       <div style={{
         position: "absolute",
         left: 88,
-        top: 398,
+        top: 424,
         color: "#8F969B",
         fontFamily: "Arial, sans-serif",
         fontSize: 16,
