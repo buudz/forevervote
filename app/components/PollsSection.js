@@ -29,7 +29,7 @@ const modalBackdropStyle = {
 };
 
 const modalStyle = {
-  width: "min(620px, 100%)",
+  width: "min(760px, 100%)",
   border: "1px solid rgba(188,152,84,.55)",
   borderRadius: 14,
   background: "linear-gradient(180deg,#08243B,#061522)",
@@ -43,14 +43,26 @@ const modalTopStyle = {
   alignItems: "flex-start",
   justifyContent: "space-between",
   gap: 20,
-  marginBottom: 18
+  marginBottom: 16
+};
+
+const sharePreviewStyle = {
+  display: "block",
+  width: "100%",
+  aspectRatio: "1200 / 630",
+  marginBottom: 14,
+  border: "1px solid rgba(188,152,84,.42)",
+  borderRadius: 12,
+  background: "#04101C",
+  objectFit: "cover",
+  boxShadow: "inset 0 1px 0 rgba(228,201,142,.06)"
 };
 
 const shareActionsStyle = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(112px, 1fr))",
+  gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
   gap: 10,
-  margin: "18px 0"
+  margin: "16px 0"
 };
 
 const shareActionStyle = {
@@ -68,7 +80,7 @@ const shareActionStyle = {
 const shareTextStyle = {
   display: "block",
   width: "100%",
-  minHeight: 118,
+  minHeight: 96,
   resize: "vertical",
   border: "1px solid rgba(135,103,51,.48)",
   borderRadius: 10,
@@ -76,15 +88,15 @@ const shareTextStyle = {
   color: "var(--text)",
   padding: 14,
   font: "inherit",
-  fontSize: 13,
+  fontSize: 14,
   lineHeight: 1.6
 };
 
 function buildSharePayload(poll) {
   const slug = poll.slug || poll.id;
   const pollUrl = new URL(`/polls/${slug}`, window.location.origin).toString();
-  const imageUrl = new URL(`/api/share/poll/${slug}`, window.location.origin).toString();
-  const text = `${poll.title} Vote on ForeverVote: ${pollUrl} Share image: ${imageUrl}`;
+  const imageUrl = new URL(`/api/share/poll/${slug}?v=2`, window.location.origin).toString();
+  const text = `${poll.title}\n\nVote on ForeverVote:\n${pollUrl}`;
 
   return { title: poll.title, pollUrl, imageUrl, text };
 }
@@ -384,6 +396,8 @@ export function PollsSection() {
           >×</button>
         </div>
 
+        <img src={sharePayload.imageUrl} alt="" aria-hidden="true" style={sharePreviewStyle} />
+
         <textarea readOnly value={sharePayload.text} style={shareTextStyle} onFocus={(event) => event.target.select()} aria-label="Share text" />
 
         <div style={shareActionsStyle}>
@@ -392,11 +406,11 @@ export function PollsSection() {
           <button type="button" style={shareActionStyle} onClick={shareToFacebook}>Facebook</button>
           <button type="button" style={shareActionStyle} onClick={shareToWhatsApp}>WhatsApp</button>
           <button type="button" style={shareActionStyle} onClick={shareByEmail}>Email</button>
-          <a style={{ ...shareActionStyle, display: "grid", placeItems: "center" }} href={sharePayload.imageUrl} target="_blank" rel="noreferrer">Image</a>
+          <a style={{ ...shareActionStyle, display: "grid", placeItems: "center" }} href={sharePayload.imageUrl} target="_blank" rel="noreferrer">Preview card</a>
         </div>
 
         <p className="share-status" style={{ marginBottom: 0 }}>
-          Copy the text, or open the generated image and upload it with your post.
+          Copy the text or use a direct share button. The poll link carries this preview card automatically where supported.
         </p>
       </div>
     </div>}

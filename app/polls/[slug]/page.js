@@ -22,7 +22,7 @@ export async function generateMetadata({ params }) {
   }
 
   const pollUrl = `${SITE_URL}/polls/${poll.slug}`;
-  const imageUrl = `${SITE_URL}/api/share/poll/${poll.slug}`;
+  const imageUrl = `${SITE_URL}/api/share/poll/${poll.slug}?v=2`;
   const description = poll.rationale || "Vote on this ForeverVote community poll.";
 
   return {
