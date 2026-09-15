@@ -532,3 +532,132 @@ h1 span{color:var(--gold-pale)}
   .admin-section-toggle{align-items:flex-start}
   .admin-section-toggle-meta{flex:0 0 auto}
 }
+
+/* Audited poll editing */
+.card-footer-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap}
+.card-footer-actions a{color:var(--gold);font-weight:700;white-space:nowrap}
+.card-footer-actions a:hover{color:var(--gold-pale)}
+
+.admin-edit-form,.admin-edit-history{
+  margin-top:18px;
+  padding-top:18px;
+  border-top:1px solid rgba(135,103,51,.24);
+}
+.admin-edit-form{display:grid;gap:16px}
+.admin-edit-form label{display:grid;gap:7px}
+.admin-edit-form label>span{
+  font-family:Cinzel,Georgia,serif;
+  color:var(--gold-pale);
+  font-size:9px;
+  text-transform:uppercase;
+  letter-spacing:1px;
+}
+.admin-edit-form label>span em{
+  font-family:Inter,Arial,sans-serif;
+  color:var(--secondary);
+  font-style:normal;
+  font-weight:400;
+  text-transform:none;
+  letter-spacing:0;
+}
+.admin-edit-form input,.admin-edit-form textarea{
+  width:100%;
+  border:1px solid rgba(135,103,51,.48);
+  border-radius:7px;
+  background:#04131F;
+  color:var(--ivory);
+  padding:12px 13px;
+  font:inherit;
+  font-size:12px;
+  outline:none;
+  box-shadow:inset 0 1px 4px rgba(0,0,0,.22);
+}
+.admin-edit-form textarea{resize:vertical;min-height:118px;line-height:1.65}
+.admin-edit-form input:focus,.admin-edit-form textarea:focus{
+  border-color:var(--gold);
+  box-shadow:0 0 0 2px rgba(188,152,84,.09),inset 0 1px 4px rgba(0,0,0,.22);
+}
+.admin-edit-form label>small{justify-self:end;color:var(--muted);font-size:9px}
+.admin-edit-trust-note{
+  display:flex;
+  align-items:flex-start;
+  gap:10px 14px;
+  flex-wrap:wrap;
+  padding:11px 13px;
+  border-left:2px solid var(--gold);
+  background:#071B2C;
+  color:var(--secondary);
+  font-size:10px;
+  line-height:1.55;
+}
+.admin-edit-trust-note strong{color:var(--gold-pale);font-family:Cinzel,Georgia,serif;font-size:9px;text-transform:uppercase;letter-spacing:.8px}
+.admin-edit-history-list{display:grid;gap:12px;margin-top:14px}
+.admin-edit-history-entry{
+  border:1px solid rgba(135,103,51,.30);
+  border-radius:7px;
+  background:#04131F;
+  padding:14px;
+}
+.admin-edit-history-meta{display:flex;gap:8px 13px;align-items:center;flex-wrap:wrap;margin-bottom:12px;color:var(--secondary);font-size:9px}
+.admin-edit-history-meta strong{color:var(--gold-pale);font-size:9px}
+.admin-edit-history-meta span{text-transform:uppercase;letter-spacing:.55px}
+.admin-edit-diff,.public-edit-diff{display:grid;gap:8px;margin-top:11px}
+.admin-edit-diff>small,.public-edit-diff>small{
+  color:var(--gold);
+  font-family:Cinzel,Georgia,serif;
+  font-size:8px;
+  text-transform:uppercase;
+  letter-spacing:1px;
+}
+.admin-edit-diff>div,.public-edit-diff>div{
+  display:grid;
+  grid-template-columns:58px minmax(0,1fr);
+  gap:10px;
+  align-items:start;
+}
+.admin-edit-diff>div>span,.public-edit-diff>div>span{color:var(--muted);font-size:8px;text-transform:uppercase;letter-spacing:.65px}
+.admin-edit-diff p,.public-edit-diff p{margin:0;color:#C8C3B6;font-size:11px;line-height:1.55;overflow-wrap:anywhere}
+
+.public-edit-history{
+  scroll-margin-top:105px;
+  margin-top:28px;
+  border:1px solid rgba(135,103,51,.50);
+  border-radius:9px;
+  background:linear-gradient(145deg,#08243B,#071B2C);
+  padding:clamp(20px,3vw,28px);
+  box-shadow:var(--shadow),inset 0 1px 0 rgba(228,201,142,.05);
+}
+.public-edit-history-heading{display:flex;justify-content:space-between;align-items:flex-end;gap:20px}
+.public-edit-history-heading .kicker{margin-bottom:9px}
+.public-edit-history-heading h2{font-size:clamp(27px,2.4vw,38px);color:var(--ivory)}
+.public-edit-history-intro{max-width:780px;margin:13px 0 20px;color:var(--secondary);font-size:11px;line-height:1.7}
+.public-edit-history-list{display:grid;gap:10px}
+.public-edit-history-entry{
+  border:1px solid rgba(135,103,51,.30);
+  border-radius:7px;
+  background:#061522;
+  overflow:hidden;
+}
+.public-edit-history-entry summary{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:13px 15px;
+  cursor:pointer;
+  color:var(--secondary);
+  font-size:9px;
+  list-style:none;
+}
+.public-edit-history-entry summary::-webkit-details-marker{display:none}
+.public-edit-history-entry summary strong{color:var(--gold-pale);font-size:9px;text-transform:uppercase;letter-spacing:.6px}
+.public-edit-history-entry[open] summary{border-bottom:1px solid rgba(135,103,51,.22);background:#071B2C}
+.public-edit-history-body{padding:14px 15px 16px}
+
+@media(max-width:620px){
+  .card-footer{align-items:flex-start;flex-direction:column}
+  .card-footer-actions{justify-content:flex-start}
+  .public-edit-history-heading{align-items:flex-start;flex-direction:column}
+  .admin-edit-diff>div,.public-edit-diff>div{grid-template-columns:1fr;gap:3px}
+}
+
