@@ -20,7 +20,7 @@ export function SiteHeader() {
       </a>
       <nav className="nav" aria-label="Primary navigation">
         <a href="/#polls">Polls</a>
-        <a className="nav-submit" href="/submit">Submit Poll</a>
+        <a className="nav-submit" href="/submit">Submit</a>
         <a href="/#about">About</a>
         <AuthStatus />
       </nav>
