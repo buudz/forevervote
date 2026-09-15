@@ -72,7 +72,7 @@ function HistoryList({ history, adminView = true }) {
   if (!history.length) {
     return <div className="admin-empty compact">
       <strong>No edits recorded.</strong>
-      <span>This poll has never had its title or rationale changed.</span>
+      <span>This poll has never had its title, rationale, or voting mode changed.</span>
     </div>;
   }
 
@@ -95,6 +95,12 @@ function HistoryList({ history, adminView = true }) {
         <div><span>Before</span><p>{entry.oldRationale || "No rationale"}</p></div>
         <div><span>After</span><p>{entry.newRationale || "No rationale"}</p></div>
       </div>}
+
+      {entry.changedFields?.includes("voting_mode") && <div className="admin-edit-diff">
+        <small>Voting mode</small>
+        <div><span>Before</span><p>{entry.oldAllowMultipleAnswers ? "Multiple answers" : "Single answer"}</p></div>
+        <div><span>After</span><p>{entry.newAllowMultipleAnswers ? "Multiple answers" : "Single answer"}</p></div>
+      </div>}
     </article>)}
   </div>;
 }
@@ -103,6 +109,7 @@ function PollAdminCard({ poll, actions, busy, onAction, onEdit, trashLabel = "" 
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(poll.title);
   const [rationale, setRationale] = useState(poll.rationale || "");
+  const [allowMultipleAnswers, setAllowMultipleAnswers] = useState(Boolean(poll.allowMultipleAnswers));
   const [historyOpen, setHistoryOpen] = useState(false);
   const [history, setHistory] = useState(null);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -111,7 +118,8 @@ function PollAdminCard({ poll, actions, busy, onAction, onEdit, trashLabel = "" 
   useEffect(() => {
     setTitle(poll.title);
     setRationale(poll.rationale || "");
-  }, [poll.title, poll.rationale]);
+    setAllowMultipleAnswers(Boolean(poll.allowMultipleAnswers));
+  }, [poll.title, poll.rationale, poll.allowMultipleAnswers]);
 
   const meta = [
     poll.creatorBattleTag,
@@ -145,7 +153,7 @@ function PollAdminCard({ poll, actions, busy, onAction, onEdit, trashLabel = "" 
 
   async function saveEdit(event) {
     event.preventDefault();
-    const saved = await onEdit(poll.id, title, rationale);
+    const saved = await onEdit(poll.id, title, rationale, allowMultipleAnswers);
     if (saved) {
       setEditing(false);
       setHistory(null);
@@ -180,7 +188,7 @@ function PollAdminCard({ poll, actions, busy, onAction, onEdit, trashLabel = "" 
         disabled={Boolean(busy)}
         onClick={() => setEditing((current) => !current)}
       >
-        {editing ? "Cancel edit" : "Edit title / rationale"}
+        {editing ? "Cancel edit" : "Edit poll"}
       </button>
 
       <button
@@ -206,7 +214,7 @@ function PollAdminCard({ poll, actions, busy, onAction, onEdit, trashLabel = "" 
     {editing && <form className="admin-edit-form" onSubmit={saveEdit}>
       <div className="admin-edit-trust-note">
         <strong>Audited edit</strong>
-        <span>Every title or rationale change is permanently recorded and is visible in the public edit history.</span>
+        <span>Every title, rationale, or voting-mode change is permanently recorded and visible in the public edit history.</span>
       </div>
 
       <label>
@@ -232,6 +240,26 @@ function PollAdminCard({ poll, actions, busy, onAction, onEdit, trashLabel = "" 
         />
         <small>{rationale.length}/1500</small>
       </label>
+
+      <fieldset className="admin-voting-mode-editor">
+        <legend>Voting mode</legend>
+        <label className="multi-vote-toggle">
+          <input
+            type="checkbox"
+            checked={allowMultipleAnswers}
+            disabled={Number(poll.totalVotes || 0) > 0}
+            onChange={(event) => setAllowMultipleAnswers(event.target.checked)}
+          />
+          <span>
+            <strong>Allow multiple answers</strong>
+            <small>{Number(poll.totalVotes || 0) > 0
+              ? "Locked because this poll already has votes. Changing the voting rules after voting starts would alter the meaning of existing results."
+              : allowMultipleAnswers
+                ? "Voters can select more than one option."
+                : "Voters can select one option; choosing another replaces the previous vote."}</small>
+          </span>
+        </label>
+      </fieldset>
 
       <div className="moderation-actions">
         <button
@@ -411,7 +439,7 @@ export function AdminPollsPanel() {
     });
   }, []);
 
-  async function editPoll(pollId, title, rationale) {
+  async function editPoll(pollId, title, rationale, allowMultipleAnswers) {
     setBusy(`${pollId}:edit`);
     setMessage("");
 
@@ -419,7 +447,7 @@ export function AdminPollsPanel() {
       const response = await fetch("/api/admin/polls", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pollId, action: "edit", title, rationale })
+        body: JSON.stringify({ pollId, action: "edit", title, rationale, allowMultipleAnswers })
       });
       const data = await response.json().catch(() => ({}));
 
@@ -429,11 +457,13 @@ export function AdminPollsPanel() {
             ? "Title must be 10–180 characters and cannot contain angle brackets."
             : data.error === "invalid_rationale"
               ? "Rationale must be 1500 characters or less and cannot contain angle brackets."
-              : "Could not save that poll edit."
+              : data.error === "voting_mode_locked"
+                ? "Voting mode is locked because this poll already has votes."
+                : "Could not save that poll edit."
         );
       }
 
-      setMessage("Poll updated. The previous wording is preserved in its edit history.");
+      setMessage("Poll updated. The previous settings are preserved in its edit history.");
       await load();
       return true;
     } catch (error) {
