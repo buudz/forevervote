@@ -43,7 +43,7 @@ export async function generateMetadata({ params }) {
 
   const pollPath = `/polls/${poll.slug}`;
   const pollUrl = absoluteUrl(pollPath);
-  const imageUrl = absoluteUrl(`/api/share/poll/${poll.slug}.png?v=6`);
+  const imageUrl = absoluteUrl(`/api/share/poll/${poll.slug}.png?v=8`);
   const description = buildPollMetaDescription(poll);
 
   return {
