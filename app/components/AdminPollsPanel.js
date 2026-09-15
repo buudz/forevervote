@@ -29,13 +29,12 @@ function formatRetention(expiresAt) {
   return `${hours}h left`;
 }
 
-function formatDate(value) {
+function formatDate(value, withTime = false) {
   if (!value) return "";
-  return new Intl.DateTimeFormat(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric"
-  }).format(new Date(value));
+  return new Intl.DateTimeFormat(undefined, withTime
+    ? { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }
+    : { year: "numeric", month: "short", day: "numeric" }
+  ).format(new Date(value));
 }
 
 function matchesSearch(poll, query) {
@@ -59,40 +58,102 @@ function sortPolls(polls, sort) {
   if (sort === "oldest") {
     return sorted.sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
   }
-
-  if (sort === "title-asc") {
-    return sorted.sort((a, b) => a.title.localeCompare(b.title));
-  }
-
-  if (sort === "title-desc") {
-    return sorted.sort((a, b) => b.title.localeCompare(a.title));
-  }
-
-  if (sort === "most-votes") {
-    return sorted.sort((a, b) => (b.totalVotes || 0) - (a.totalVotes || 0) || a.title.localeCompare(b.title));
-  }
-
-  if (sort === "least-votes") {
-    return sorted.sort((a, b) => (a.totalVotes || 0) - (b.totalVotes || 0) || a.title.localeCompare(b.title));
-  }
-
-  if (sort === "category") {
-    return sorted.sort((a, b) => a.category.localeCompare(b.category) || a.title.localeCompare(b.title));
-  }
-
-  if (sort === "expiring") {
-    return sorted.sort((a, b) => new Date(a.trashExpiresAt || 0) - new Date(b.trashExpiresAt || 0));
-  }
+  if (sort === "title-asc") return sorted.sort((a, b) => a.title.localeCompare(b.title));
+  if (sort === "title-desc") return sorted.sort((a, b) => b.title.localeCompare(a.title));
+  if (sort === "most-votes") return sorted.sort((a, b) => (b.totalVotes || 0) - (a.totalVotes || 0) || a.title.localeCompare(b.title));
+  if (sort === "least-votes") return sorted.sort((a, b) => (a.totalVotes || 0) - (b.totalVotes || 0) || a.title.localeCompare(b.title));
+  if (sort === "category") return sorted.sort((a, b) => a.category.localeCompare(b.category) || a.title.localeCompare(b.title));
+  if (sort === "expiring") return sorted.sort((a, b) => new Date(a.trashExpiresAt || 0) - new Date(b.trashExpiresAt || 0));
 
   return sorted.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 }
 
-function PollAdminCard({ poll, actions, busy, onAction, trashLabel = "" }) {
+function HistoryList({ history, adminView = true }) {
+  if (!history.length) {
+    return <div className="admin-empty compact">
+      <strong>No edits recorded.</strong>
+      <span>This poll has never had its title or rationale changed.</span>
+    </div>;
+  }
+
+  return <div className="admin-edit-history-list">
+    {history.map((entry) => <article key={entry.id} className="admin-edit-history-entry">
+      <div className="admin-edit-history-meta">
+        <strong>{formatDate(entry.editedAt, true)}</strong>
+        <span>{(entry.changedFields || []).join(" + ") || "poll copy"}</span>
+        {adminView && <span>{entry.editorBattleTag || "Admin"}</span>}
+      </div>
+
+      {entry.changedFields?.includes("title") && <div className="admin-edit-diff">
+        <small>Title</small>
+        <div><span>Before</span><p>{entry.oldTitle}</p></div>
+        <div><span>After</span><p>{entry.newTitle}</p></div>
+      </div>}
+
+      {entry.changedFields?.includes("rationale") && <div className="admin-edit-diff">
+        <small>Rationale</small>
+        <div><span>Before</span><p>{entry.oldRationale || "No rationale"}</p></div>
+        <div><span>After</span><p>{entry.newRationale || "No rationale"}</p></div>
+      </div>}
+    </article>)}
+  </div>;
+}
+
+function PollAdminCard({ poll, actions, busy, onAction, onEdit, trashLabel = "" }) {
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState(poll.title);
+  const [rationale, setRationale] = useState(poll.rationale || "");
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [history, setHistory] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState("");
+
+  useEffect(() => {
+    setTitle(poll.title);
+    setRationale(poll.rationale || "");
+  }, [poll.title, poll.rationale]);
+
   const meta = [
     poll.creatorBattleTag,
     formatDate(poll.createdAt),
     `${poll.totalVotes || 0} vote${poll.totalVotes === 1 ? "" : "s"}`
   ].filter(Boolean).join(" · ");
+
+  async function toggleHistory() {
+    if (historyOpen) {
+      setHistoryOpen(false);
+      return;
+    }
+
+    setHistoryOpen(true);
+    if (history) return;
+
+    setHistoryLoading(true);
+    setHistoryError("");
+
+    try {
+      const response = await fetch(`/api/admin/polls?historyPollId=${encodeURIComponent(poll.id)}`, { cache: "no-store" });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data.ok) throw new Error("Could not load edit history.");
+      setHistory(data.history || []);
+    } catch (error) {
+      setHistoryError(error.message);
+    } finally {
+      setHistoryLoading(false);
+    }
+  }
+
+  async function saveEdit(event) {
+    event.preventDefault();
+    const saved = await onEdit(poll.id, title, rationale);
+    if (saved) {
+      setEditing(false);
+      setHistory(null);
+      if (historyOpen) {
+        setHistoryOpen(false);
+      }
+    }
+  }
 
   return <article className="moderation-card">
     <div className="card-top">
@@ -101,14 +162,35 @@ function PollAdminCard({ poll, actions, busy, onAction, trashLabel = "" }) {
     </div>
     <h3>{poll.title}</h3>
     {poll.rationale && <p className="context">{poll.rationale}</p>}
+
     <div className="moderation-options">
       {poll.options.map((option) => <span key={option.id}>{option.text}</span>)}
     </div>
+
     {trashLabel && <p className="trash-retention">
       <strong>{trashLabel}</strong>
       <span>{formatRetention(poll.trashExpiresAt)}</span>
     </p>}
+
     <div className="moderation-actions">
+      <button
+        className="button secondary"
+        type="button"
+        disabled={Boolean(busy)}
+        onClick={() => setEditing((current) => !current)}
+      >
+        {editing ? "Cancel edit" : "Edit title / rationale"}
+      </button>
+
+      <button
+        className="button secondary"
+        type="button"
+        disabled={Boolean(busy)}
+        onClick={toggleHistory}
+      >
+        {historyOpen ? "Hide edit history" : "Edit history"}
+      </button>
+
       {actions.map((action) => <button
         key={action.value}
         className={action.className || "button secondary"}
@@ -119,6 +201,57 @@ function PollAdminCard({ poll, actions, busy, onAction, trashLabel = "" }) {
         {busy === `${poll.id}:${action.value}` ? action.busyLabel : action.label}
       </button>)}
     </div>
+
+    {editing && <form className="admin-edit-form" onSubmit={saveEdit}>
+      <div className="admin-edit-trust-note">
+        <strong>Audited edit</strong>
+        <span>Every title or rationale change is permanently recorded and is visible in the public edit history.</span>
+      </div>
+
+      <label>
+        <span>Poll title</span>
+        <input
+          type="text"
+          minLength={10}
+          maxLength={180}
+          required
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+        />
+        <small>{title.length}/180</small>
+      </label>
+
+      <label>
+        <span>Rationale <em>optional</em></span>
+        <textarea
+          rows={5}
+          maxLength={1500}
+          value={rationale}
+          onChange={(event) => setRationale(event.target.value)}
+        />
+        <small>{rationale.length}/1500</small>
+      </label>
+
+      <div className="moderation-actions">
+        <button
+          className="button primary"
+          type="submit"
+          disabled={Boolean(busy) || title.trim().length < 10}
+        >
+          {busy === `${poll.id}:edit` ? "Saving edit…" : "Save audited edit"}
+        </button>
+      </div>
+    </form>}
+
+    {historyOpen && <div className="admin-edit-history">
+      <div className="admin-edit-trust-note">
+        <strong>Append-only history</strong>
+        <span>Existing history entries cannot be edited or deleted through the admin panel.</span>
+      </div>
+      {historyLoading && <p className="poll-status">Loading edit history…</p>}
+      {historyError && <p className="poll-status">{historyError}</p>}
+      {history && <HistoryList history={history} />}
+    </div>}
   </article>;
 }
 
@@ -131,6 +264,7 @@ function AdminSection({
   actions,
   busy,
   onAction,
+  onEdit,
   trashLabel = "",
   defaultOpen = false,
   expirySort = false
@@ -214,6 +348,7 @@ function AdminSection({
                     actions={actions}
                     busy={busy}
                     onAction={onAction}
+                    onEdit={onEdit}
                     trashLabel={trashLabel}
                   />)}
                 </div>}
@@ -275,14 +410,42 @@ export function AdminPollsPanel() {
     });
   }, []);
 
-  async function act(pollId, action) {
-    if (action === "reject" && !window.confirm("Reject this submission? It will stay in the recycle bin for 2 days.")) {
-      return;
-    }
+  async function editPoll(pollId, title, rationale) {
+    setBusy(`${pollId}:edit`);
+    setMessage("");
 
-    if (action === "unpublish" && !window.confirm("Unpublish this live poll? Voting will stop immediately. You can restore it for 7 days.")) {
-      return;
+    try {
+      const response = await fetch("/api/admin/polls", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pollId, action: "edit", title, rationale })
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data.ok) {
+        throw new Error(
+          data.error === "invalid_title"
+            ? "Title must be 10–180 characters and cannot contain angle brackets."
+            : data.error === "invalid_rationale"
+              ? "Rationale must be 1500 characters or less and cannot contain angle brackets."
+              : "Could not save that poll edit."
+        );
+      }
+
+      setMessage("Poll updated. The previous wording is preserved in its edit history.");
+      await load();
+      return true;
+    } catch (error) {
+      setMessage(error.message);
+      return false;
+    } finally {
+      setBusy("");
     }
+  }
+
+  async function act(pollId, action) {
+    if (action === "reject" && !window.confirm("Reject this submission? It will stay in the recycle bin for 2 days.")) return;
+    if (action === "unpublish" && !window.confirm("Unpublish this live poll? Voting will stop immediately. You can restore it for 7 days.")) return;
 
     setBusy(`${pollId}:${action}`);
     setMessage("");
@@ -341,18 +504,19 @@ export function AdminPollsPanel() {
     </div>;
   }
 
+  const commonProps = { busy, onAction: act, onEdit: editPoll };
+
   return <div className="admin-stack">
     {message && <p className="poll-status" role="status">{message}</p>}
 
     <AdminSection
+      {...commonProps}
       kicker="Admin moderation"
       title="Pending submissions"
       polls={queues.submissions}
       defaultOpen
       emptyTitle="Queue clear."
       emptyText="There are no poll submissions waiting for review."
-      busy={busy}
-      onAction={act}
       actions={[
         { value: "publish", label: "Approve & publish", busyLabel: "Publishing…", className: "button primary" },
         { value: "reject", label: "Reject", busyLabel: "Rejecting…", className: "button secondary danger-action" }
@@ -360,26 +524,24 @@ export function AdminPollsPanel() {
     />
 
     <AdminSection
+      {...commonProps}
       kicker="Live management"
       title="Published polls"
       polls={queues.live}
       emptyTitle="No live polls."
       emptyText="Published polls will appear here."
-      busy={busy}
-      onAction={act}
       actions={[
         { value: "unpublish", label: "Unpublish", busyLabel: "Unpublishing…", className: "button secondary danger-action" }
       ]}
     />
 
     <AdminSection
+      {...commonProps}
       kicker="Recycle bin"
       title="Rejected submissions"
       polls={queues.rejected}
       emptyTitle="No rejected submissions."
       emptyText="Rejected submissions stay restorable here for 2 days."
-      busy={busy}
-      onAction={act}
       trashLabel="Rejected · kept for 2 days"
       expirySort
       actions={[
@@ -388,13 +550,12 @@ export function AdminPollsPanel() {
     />
 
     <AdminSection
+      {...commonProps}
       kicker="Recycle bin"
       title="Unpublished polls"
       polls={queues.unpublished}
       emptyTitle="No unpublished polls."
       emptyText="Unpublished polls stay restorable here for 7 days."
-      busy={busy}
-      onAction={act}
       trashLabel="Unpublished · kept for 7 days"
       expirySort
       actions={[
