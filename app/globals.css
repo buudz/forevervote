@@ -725,3 +725,28 @@ h1 span{color:var(--gold-pale)}
   font-size:10px;
 }
 .standalone-login-callout .button{min-height:40px}
+
+
+/* Admin poll voting-mode editor */
+.admin-voting-mode-editor{
+  border:1px solid rgba(135,103,51,.24);
+  border-radius:8px;
+  padding:15px 16px;
+  margin:0;
+  min-width:0;
+}
+.admin-voting-mode-editor legend{
+  padding:0 7px;
+  font-family:Cinzel,Georgia,serif;
+  color:var(--gold-pale);
+  font-size:9px;
+  text-transform:uppercase;
+  letter-spacing:1px;
+}
+.admin-voting-mode-editor .multi-vote-toggle input:disabled{
+  opacity:.55;
+  cursor:not-allowed;
+}
+.admin-voting-mode-editor .multi-vote-toggle input:disabled + span{
+  opacity:.72;
+}
