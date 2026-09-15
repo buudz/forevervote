@@ -10,7 +10,7 @@ export function Hero() {
         <p className="intro">ForeverVote is an independent community polling hub for the biggest questions surrounding World of Warcraft: Forever. Verified players, one vote per poll, and public results built for discussion.</p>
         <div className="hero-actions">
           <a className="button primary" href="#polls">Browse polls</a>
-          <a className="button secondary" href="#about">How ForeverVote works</a>
+          <a className="button secondary" href="#how-it-works">How ForeverVote works</a>
         </div>
         <div className="disclaimer-banner">
           <strong>Independent fan project.</strong>

@@ -47,8 +47,8 @@ function validateSubmission(body) {
     return { error: "Title must be 10–180 characters and cannot contain < or >." };
   }
 
-  if (description.length < 20 || description.length > 1500 || /[<>]/.test(description)) {
-    return { error: "Rationale must be 20–1500 characters and cannot contain < or >." };
+  if (description.length > 1500 || /[<>]/.test(description)) {
+    return { error: "Optional context can be up to 1500 characters and cannot contain < or >." };
   }
 
   if (!ALLOWED_CATEGORIES.includes(category)) {

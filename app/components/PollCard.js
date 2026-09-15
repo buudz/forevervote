@@ -7,6 +7,7 @@ function optionPercent(option, totalVotes) {
 }
 
 export function PollCard({ poll, canVote, authReady, databaseReady, onShare, onVote, votingOptionId }) {
+  const context = poll.rationale || poll.context;
   const disabledReason = !authReady
     ? "Checking login…"
     : !databaseReady
@@ -22,7 +23,7 @@ export function PollCard({ poll, canVote, authReady, databaseReady, onShare, onV
       <span className="draft">{databaseReady ? `${poll.totalVotes || 0} votes` : "Voting soon"}</span>
     </div>
     <h3>{poll.title}</h3>
-    <p className="context">{poll.rationale || poll.context}</p>
+    {context && <p className="context">{context}</p>}
     <div className="option-preview" aria-label="Poll options">
       {poll.options.map((option) => {
         const selected = poll.userVoteOptionId === option.id;

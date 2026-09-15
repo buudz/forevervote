@@ -20,7 +20,7 @@ const voteFilterOptions = [
 export function PollsSection() {
   const [category, setCategory] = useState("All");
   const [sort, setSort] = useState("explore");
-  const [voteFilter, setVoteFilter] = useState("all");
+  const [voteFilter, setVoteFilter] = useState(null);
   const [shareMessage, setShareMessage] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [auth, setAuth] = useState({ loading: true, authenticated: false });
@@ -30,21 +30,19 @@ export function PollsSection() {
   const authReady = !auth.loading;
   const canVote = Boolean(auth.authenticated && auth.wowProfile?.hasClassicProfile && pollState.databaseReady);
 
-  async function loadAuthAndPolls(nextSort = sort, nextVoteFilter = voteFilter, active = true) {
+  async function loadPolls(nextSort = sort, nextVoteFilter = voteFilter, active = true) {
+    if (!nextVoteFilter) {
+      return;
+    }
+
     const params = new URLSearchParams({ sort: nextSort, filter: nextVoteFilter });
-    const [authResponse, pollsResponse] = await Promise.all([
-      fetch("/api/auth/me", { cache: "no-store" }),
-      fetch(`/api/polls?${params.toString()}`, { cache: "no-store" })
-    ]);
+    const pollsResponse = await fetch(`/api/polls?${params.toString()}`, { cache: "no-store" });
 
     if (!active) {
       return;
     }
 
-    const authData = await authResponse.json();
     const pollsData = await pollsResponse.json();
-
-    setAuth({ loading: false, ...authData });
 
     if (!pollsResponse.ok || !pollsData.databaseReady) {
       setPollState({ loading: false, databaseReady: false, polls: fallbackPolls });
@@ -59,10 +57,38 @@ export function PollsSection() {
   useEffect(() => {
     let active = true;
 
+    fetch("/api/auth/me", { cache: "no-store" })
+      .then((response) => response.json())
+      .then((data) => {
+        if (!active) {
+          return;
+        }
+
+        setAuth({ loading: false, ...data });
+        setVoteFilter(data.authenticated && data.wowProfile?.hasClassicProfile ? "unvoted" : "all");
+      })
+      .catch(() => {
+        if (active) {
+          setAuth({ loading: false, authenticated: false });
+          setVoteFilter("all");
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!voteFilter) {
+      return undefined;
+    }
+
+    let active = true;
     setPollState((current) => ({ ...current, loading: true }));
-    loadAuthAndPolls(sort, voteFilter, active).catch(() => {
+
+    loadPolls(sort, voteFilter, active).catch(() => {
       if (active) {
-        setAuth({ loading: false, authenticated: false });
         setPollState({ loading: false, databaseReady: false, polls: fallbackPolls });
         setStatusMessage("Could not load live polls. Try refreshing in a moment.");
       }
@@ -72,7 +98,6 @@ export function PollsSection() {
       active = false;
     };
   }, [sort, voteFilter]);
-
   const visiblePolls = useMemo(() => {
     return pollState.polls.filter((poll) => category === "All" || poll.category === category);
   }, [category, pollState.polls]);
@@ -118,7 +143,7 @@ export function PollsSection() {
         throw new Error(data.error || "vote_failed");
       }
 
-      await loadAuthAndPolls(sort, voteFilter);
+      await loadPolls(sort, voteFilter);
       setStatusMessage("Vote saved.");
     } catch (error) {
       setStatusMessage(error.message === "classic_profile_required"
@@ -179,6 +204,25 @@ export function PollsSection() {
 
       {statusMessage && <p className="poll-status" role="status">{statusMessage}</p>}
       {pollState.loading && <p className="poll-status">Loading live polls…</p>}
+
+      {!pollState.loading && pollState.databaseReady && visiblePolls.length === 0 && <div className="poll-empty-state" role="status">
+        {voteFilter === "unvoted" && auth.authenticated
+          ? <>
+              <strong>{category === "All" ? "You’re all caught up." : "Nothing left to vote on here."}</strong>
+              <span>{category === "All" ? "You’ve voted on all available polls." : "You’ve voted on every available poll in this category."}</span>
+              <button className="button secondary" type="button" onClick={() => setVoteFilter("all")}>View all polls</button>
+            </>
+          : voteFilter === "voted"
+            ? <>
+                <strong>No voted polls yet.</strong>
+                <span>Your completed votes will appear here.</span>
+                <button className="button secondary" type="button" onClick={() => setVoteFilter("unvoted")}>Show unvoted</button>
+              </>
+            : <>
+                <strong>No polls found.</strong>
+                <span>Try another category or check back later.</span>
+              </>}
+      </div>}
 
       <div className="poll-grid">
         {visiblePolls.map((poll) => <PollCard

@@ -11,9 +11,9 @@ export default function Home() {
     <SiteHeader />
     <main id="main">
       <Hero />
-      <StatusStrip />
       <PollsSection />
       <AboutSection />
+      <StatusStrip />
     </main>
     <SiteFooter />
   </>;
