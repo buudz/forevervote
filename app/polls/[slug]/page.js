@@ -157,7 +157,7 @@ export default async function PollSharePage({ params }) {
             </div>
 
             <p className="public-edit-history-intro">
-              ForeverVote records every admin change to a poll title, rationale, or voting mode so poll rules cannot be changed silently.
+              ForeverVote records admin and creator changes to poll wording, options, category, or voting mode so poll rules cannot be changed silently.
             </p>
 
             <div className="public-edit-history-list">
