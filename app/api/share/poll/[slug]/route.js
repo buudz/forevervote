@@ -51,7 +51,7 @@ function splitLines(value, maxChars, maxLines) {
 }
 
 function getOptionLabels(options) {
-  const maxVisible = 5;
+  const maxVisible = 4;
   const selectable = options.filter((option) => !option.isNeutral);
   const labels = selectable.length ? selectable : options;
 
@@ -69,12 +69,12 @@ function renderOptionChips(optionLabels, startY) {
   return optionLabels.map((label, index) => {
     const column = index % 2;
     const row = Math.floor(index / 2);
-    const x = 88 + column * 504;
-    const y = startY + row * 58;
-    const text = escapeXml(truncate(label, 30));
+    const x = 88 + column * 492;
+    const y = startY + row * 50;
+    const text = escapeXml(truncate(label, 28));
 
-    return `<rect x='${x}' y='${y}' width='468' height='46' rx='10' fill='#071B2C' stroke='#876733' stroke-opacity='.74'/>
-      <text x='${x + 22}' y='${y + 30}' font-family='Arial, sans-serif' font-size='21' font-weight='700' fill='#E4C98E'>${text}</text>`;
+    return `<rect x='${x}' y='${y}' width='456' height='40' rx='9' fill='#071B2C' stroke='#876733' stroke-opacity='.74'/>
+      <text x='${x + 20}' y='${y + 27}' font-family='Arial, sans-serif' font-size='20' font-weight='700' fill='#E4C98E'>${text}</text>`;
   }).join("");
 }
 
@@ -86,12 +86,10 @@ export async function GET(_request, context) {
     return new Response("Poll not found", { status: 404 });
   }
 
-  const titleLines = splitLines(poll.title, 28, 3);
+  const titleLines = splitLines(poll.title, 30, 3);
   const titleFontSize = titleLines.length >= 3 ? 52 : 60;
   const titleLineHeight = titleLines.length >= 3 ? 58 : 66;
-  const rationaleLines = splitLines(poll.rationale, 58, titleLines.length >= 3 ? 1 : 2);
-  const rationaleStartY = 250 + titleLines.length * titleLineHeight + 18;
-  const optionsLabelY = Math.min(448, rationaleStartY + rationaleLines.length * 32 + 38);
+  const optionsLabelY = 418;
   const optionLabels = getOptionLabels(poll.options);
   const categoryWidth = Math.min(312, 122 + escapeXml(poll.category).length * 13);
 
@@ -133,14 +131,13 @@ export async function GET(_request, context) {
   <path d='M82 154h760' stroke='#876733' stroke-opacity='.34'/>
   <rect x='88' y='174' width='${categoryWidth}' height='36' rx='8' fill='#061522' stroke='#876733' stroke-opacity='.62'/>
   <text x='108' y='198' font-family='Arial, sans-serif' font-size='17' font-weight='800' letter-spacing='2.4' fill='#BC9854'>${escapeXml(poll.category).toUpperCase()}</text>
-  <image href='${BRAND_MARK_URL}' x='904' y='86' width='196' height='196' preserveAspectRatio='xMidYMid meet' filter='url(#logoShadow)'/>
+  <image href='${BRAND_MARK_URL}' x='926' y='82' width='156' height='156' preserveAspectRatio='xMidYMid meet' filter='url(#logoShadow)'/>
   ${titleLines.map((line, index) => `<text x='88' y='${272 + index * titleLineHeight}' font-family='Georgia, serif' font-weight='700' font-size='${titleFontSize}' fill='#F8F2D9'>${escapeXml(line)}</text>`).join("")}
-  ${rationaleLines.map((line, index) => `<text x='90' y='${rationaleStartY + index * 32}' font-family='Arial, sans-serif' font-size='23' fill='#D8D2C3'>${escapeXml(line)}</text>`).join("")}
   <text x='88' y='${optionsLabelY}' font-family='Arial, sans-serif' font-size='16' font-weight='800' letter-spacing='2.8' fill='#8F969B'>POLL OPTIONS</text>
   ${renderOptionChips(optionLabels, optionsLabelY + 20)}
-  <path d='M82 568h1036' stroke='#876733' stroke-opacity='.28'/>
-  <text x='88' y='606' font-family='Arial, sans-serif' font-size='18' fill='#718398'>www.forevervote.com</text>
-  <text x='1114' y='606' text-anchor='end' font-family='Arial, sans-serif' font-size='18' font-weight='800' letter-spacing='1.4' fill='#E4C98E'>VOTE NOW</text>
+  <path d='M82 560h1036' stroke='#876733' stroke-opacity='.28'/>
+  <text x='88' y='598' font-family='Arial, sans-serif' font-size='18' fill='#718398'>www.forevervote.com</text>
+  <text x='1114' y='598' text-anchor='end' font-family='Arial, sans-serif' font-size='18' font-weight='800' letter-spacing='1.4' fill='#E4C98E'>VOTE NOW</text>
 </svg>`;
 
   return new Response(svg, {

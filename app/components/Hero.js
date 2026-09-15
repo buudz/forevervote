@@ -7,7 +7,7 @@ export function Hero() {
       <div className="hero-copy">
         <p className="kicker">World of Warcraft: Forever · Community Voting Hub</p>
         <h1 id="hero-title">A place for players<br /><span>to be heard.</span></h1>
-        <p className="intro">ForeverVote is an independent community polling hub for the biggest questions surrounding World of Warcraft: Forever. Verified players, one vote per poll, and public results built for discussion.</p>
+        <p className="intro">ForeverVote is an independent community polling hub for the biggest questions surrounding World of Warcraft: Forever. Verified players, one vote per poll, to better understand what the community really wants.</p>
         <div className="hero-actions">
           <a className="button primary" href="#polls">Browse polls</a>
           <a className="button secondary" href="#how-it-works">How ForeverVote works</a>
