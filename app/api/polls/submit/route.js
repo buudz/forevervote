@@ -136,7 +136,7 @@ function validateSubmission(body) {
   const allowMultipleAnswers = body?.allowMultipleAnswers === true;
 
   if (title.length < 10 || title.length > 90 || /[<>]/.test(title)) {
-    return { error: "Title must be 10–180 characters and cannot contain < or >." };
+    return { error: "Title must be 10–90 characters and cannot contain < or >." };
   }
 
   if (description.length > 1500 || /[<>]/.test(description)) {
