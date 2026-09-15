@@ -36,6 +36,97 @@ function slugify(title) {
   return `${base}-${crypto.randomBytes(4).toString("hex")}`;
 }
 
+function submissionFailure(error) {
+  const message = String(error?.message || "");
+  const details = String(error?.details || "");
+  const combined = `${message} ${details}`.toLowerCase();
+
+  if (error?.code === "RATE_LIMITED" || combined.includes("too many poll submissions")) {
+    return {
+      status: 429,
+      error: "rate_limited",
+      message: "You have submitted several polls recently. Please wait before sending another."
+    };
+  }
+
+  if (combined.includes("title") && (combined.includes("180") || combined.includes("invalid poll title"))) {
+    return {
+      status: 400,
+      error: "invalid_title",
+      message: "The poll question must be between 10 and 180 characters."
+    };
+  }
+
+  if (combined.includes("context") || combined.includes("description")) {
+    if (combined.includes("1500") || combined.includes("invalid poll context") || combined.includes("invalid poll rationale")) {
+      return {
+        status: 400,
+        error: "invalid_context",
+        message: "Additional context must be 1500 characters or fewer."
+      };
+    }
+  }
+
+  if (combined.includes("poll option") || combined.includes("options must be unique")) {
+    return {
+      status: 400,
+      error: "invalid_options",
+      message: combined.includes("unique")
+        ? "Poll options must all be different."
+        : "Each poll option must be 1–100 characters."
+    };
+  }
+
+  if (combined.includes("invalid poll category")) {
+    return {
+      status: 400,
+      error: "invalid_category",
+      message: "Choose a valid poll category."
+    };
+  }
+
+  if (error?.code === "23505" || combined.includes("duplicate key")) {
+    return {
+      status: 409,
+      error: "duplicate_submission",
+      message: "That submission conflicts with an existing record. Please try submitting it again."
+    };
+  }
+
+  if (
+    error?.status === 401 ||
+    error?.status === 403 ||
+    error?.code === "42501" ||
+    combined.includes("permission denied") ||
+    combined.includes("row-level security")
+  ) {
+    return {
+      status: 503,
+      error: "submission_service_unavailable",
+      message: "The submission service is temporarily unavailable. Please try again shortly."
+    };
+  }
+
+  if (
+    combined.includes("supabase is not configured") ||
+    combined.includes("fetch failed") ||
+    combined.includes("network") ||
+    error?.status >= 500
+  ) {
+    return {
+      status: 503,
+      error: "submission_service_unavailable",
+      message: "The submission service is temporarily unavailable. Please try again shortly."
+    };
+  }
+
+  return {
+    status: 500,
+    error: "submission_failed",
+    message: "The poll could not be submitted. Please try again. If it keeps happening, change nothing and report the error."
+  };
+}
+
 function validateSubmission(body) {
   const title = clean(body?.title);
   const description = clean(body?.description);
@@ -126,20 +217,18 @@ export async function POST(request) {
       }
     }, 201);
   } catch (error) {
-    console.error("Poll submission failed", error.message);
+    console.error("Poll submission failed", {
+      message: error?.message,
+      code: error?.code,
+      status: error?.status,
+      details: error?.details
+    });
 
-    if (error.message?.includes("Too many poll submissions")) {
-      return json({
-        ok: false,
-        error: "rate_limited",
-        message: "You have submitted several polls recently. Please wait before sending another."
-      }, 429);
-    }
-
+    const failure = submissionFailure(error);
     return json({
       ok: false,
-      error: "submission_failed",
-      message: "Could not submit the poll right now. Please try again in a moment."
-    }, 500);
+      error: failure.error,
+      message: failure.message
+    }, failure.status);
   }
 }
