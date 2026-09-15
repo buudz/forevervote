@@ -42,6 +42,7 @@ function validateSubmission(body) {
   const category = clean(body?.category);
   const rawOptions = Array.isArray(body?.options) ? body.options : [];
   const options = rawOptions.map(clean);
+  const allowMultipleAnswers = body?.allowMultipleAnswers === true;
 
   if (title.length < 10 || title.length > 180 || /[<>]/.test(title)) {
     return { error: "Title must be 10–180 characters and cannot contain < or >." };
@@ -68,7 +69,7 @@ function validateSubmission(body) {
     return { error: "Poll options must be unique." };
   }
 
-  return { title, description, category, options };
+  return { title, description, category, options, allowMultipleAnswers };
 }
 
 export async function POST(request) {
@@ -111,7 +112,8 @@ export async function POST(request) {
       title: validated.title,
       description: validated.description,
       category: validated.category,
-      options: validated.options
+      options: validated.options,
+      allowMultipleAnswers: validated.allowMultipleAnswers
     });
 
     return json({

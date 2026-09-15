@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { SiteFooter } from "../../components/SiteFooter";
 import { SiteHeader } from "../../components/SiteHeader";
+import { StandalonePollCard } from "../../components/StandalonePollCard";
 import { getPollShareData, getPublicPollEditHistory } from "../../lib/supabase/polls";
 import {
   SITE_NAME,
@@ -144,23 +145,7 @@ export default async function PollSharePage({ params }) {
             <span className="count-badge">{poll.options.length} options</span>
           </div>
 
-          <article className="poll-card">
-            <div className="card-top">
-              <span className="category">{poll.category}</span>
-              <span className="draft">Community poll</span>
-            </div>
-            <h3>{poll.title}</h3>
-            {poll.rationale && <p className="context">{poll.rationale}</p>}
-            <div className="option-preview" aria-label="Poll options">
-              {poll.options.map((option) => <span className="vote-option" key={`${option.position}-${option.text}`}>
-                <span>{option.text}</span>
-              </span>)}
-            </div>
-            <div className="card-footer">
-              <span>Login with Battle.net on ForeverVote to vote.</span>
-              <a href={`/#${poll.slug}`}>Vote on this poll ↗</a>
-            </div>
-          </article>
+          <StandalonePollCard initialPoll={poll} />
 
           {editHistory.length > 0 && <section id="edit-history" className="public-edit-history" aria-labelledby="edit-history-title">
             <div className="public-edit-history-heading">

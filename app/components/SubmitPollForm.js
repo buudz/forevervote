@@ -12,6 +12,7 @@ export function SubmitPollForm() {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("General");
   const [options, setOptions] = useState(defaultOptions);
+  const [allowMultipleAnswers, setAllowMultipleAnswers] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [submission, setSubmission] = useState(null);
@@ -59,7 +60,7 @@ export function SubmitPollForm() {
       const response = await fetch("/api/polls/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, description, category, options })
+        body: JSON.stringify({ title, description, category, options, allowMultipleAnswers })
       });
       const data = await response.json().catch(() => ({}));
 
@@ -79,6 +80,7 @@ export function SubmitPollForm() {
       setDescription("");
       setCategory("General");
       setOptions([...defaultOptions]);
+      setAllowMultipleAnswers(false);
     } catch (error) {
       setMessage(error.message);
     } finally {
@@ -151,6 +153,23 @@ export function SubmitPollForm() {
       </select>
     </label>
 
+    <fieldset className="voting-mode-editor">
+      <legend>Voting mode</legend>
+      <label className="multi-vote-toggle">
+        <input
+          type="checkbox"
+          checked={allowMultipleAnswers}
+          onChange={(event) => setAllowMultipleAnswers(event.target.checked)}
+        />
+        <span>
+          <strong>Allow multiple answers</strong>
+          <small>{allowMultipleAnswers
+            ? "Voters can select any number of options. Each option shows the percentage of voters who selected it."
+            : "Voters can select one answer. Choosing another answer replaces the previous vote."}</small>
+        </span>
+      </label>
+    </fieldset>
+
     <fieldset className="option-editor">
       <legend>Poll options</legend>
       <p>Use 2–20 distinct answers.</p>
@@ -173,7 +192,7 @@ export function SubmitPollForm() {
 
     <div className="submission-note">
       <strong>Before you submit</strong>
-      <span>ForeverVote may reject duplicate, loaded, abusive, promotional, or off-topic polls. Approved wording is locked once a poll goes live.</span>
+      <span>ForeverVote may reject duplicate, loaded, abusive, promotional, or off-topic polls. Answer options and voting mode are locked once a poll goes live; any later admin wording edit is recorded in the public edit history.</span>
     </div>
 
     <button className="button primary submit-button" type="submit" disabled={submitting}>

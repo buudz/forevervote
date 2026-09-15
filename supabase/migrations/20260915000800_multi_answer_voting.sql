@@ -1,86 +1,11 @@
--- Add creator-selectable multi-answer polls while preserving strong vote integrity.
--- Existing polls remain single-answer. Voting mode is immutable after publication.
+-- Prepare creator-selectable multi-answer polls without breaking the currently deployed app.
+-- The legacy one-vote unique constraint remains in place until the matching app deploy is live.
 
 alter table public.polls
   add column if not exists allow_multiple_answers boolean not null default false;
 
--- A user may have at most one row for each option. Single-answer polls are
--- additionally enforced by guard_vote() below.
-alter table public.votes
-  drop constraint if exists one_vote_per_user_per_poll;
-
-alter table public.votes
-  drop constraint if exists one_selection_per_option_per_user;
-
-alter table public.votes
-  add constraint one_selection_per_option_per_user
-  unique (poll_id, user_id, option_id);
-
-create or replace function public.guard_vote() returns trigger
-language plpgsql
-security invoker
-set search_path = ''
-as $$
-declare
-  eligible boolean;
-  poll_status text;
-  multiple_answers boolean;
-begin
-  -- Serialize all vote mutations for one user/poll pair. This prevents two
-  -- concurrent requests from bypassing the single-answer rule.
-  perform pg_advisory_xact_lock(
-    hashtextextended(new.poll_id::text || ':' || new.user_id::text, 0)
-  );
-
-  if TG_OP = 'UPDATE' then
-    if new.id is distinct from old.id
-       or new.user_id is distinct from old.user_id
-       or new.poll_id is distinct from old.poll_id then
-      raise exception 'Vote identity cannot be changed' using errcode = '23514';
-    end if;
-    new.created_at := old.created_at;
-  else
-    new.created_at := now();
-  end if;
-
-  select wow_verified
-  into eligible
-  from public.users
-  where id = new.user_id
-  for share;
-
-  if eligible is distinct from true then
-    raise exception 'Verified WoW profile required' using errcode = '23514';
-  end if;
-
-  select status, allow_multiple_answers
-  into poll_status, multiple_answers
-  from public.polls
-  where id = new.poll_id
-  for share;
-
-  if poll_status is distinct from 'open' then
-    raise exception 'Poll is not open' using errcode = '23514';
-  end if;
-
-  if multiple_answers is not true and exists (
-    select 1
-    from public.votes v
-    where v.poll_id = new.poll_id
-      and v.user_id = new.user_id
-      and v.id is distinct from new.id
-  ) then
-    raise exception 'This poll allows one answer per voter' using errcode = '23514';
-  end if;
-
-  new.updated_at := now();
-  return new;
-end;
-$$;
-
--- Preserve the existing audited-copy rules and lock the voting mode once a
--- poll leaves draft. Changing voting semantics after votes exist would be
--- misleading, so this setting cannot change on a published/hidden poll.
+-- Preserve the existing audited-copy rules and lock voting mode once a poll
+-- leaves draft. Changing voting semantics after publication would be misleading.
 create or replace function public.guard_poll() returns trigger
 language plpgsql
 security invoker
@@ -164,7 +89,6 @@ begin
 end;
 $$;
 
--- New submission signature with an explicit voting-mode choice.
 create or replace function public.submit_poll(
   p_creator_id uuid,
   p_slug text,
@@ -297,7 +221,7 @@ begin
 end;
 $$;
 
--- Keep the old six-argument server call valid for backwards compatibility.
+-- Keep the old six-argument call valid.
 create or replace function public.submit_poll(
   p_creator_id uuid,
   p_slug text,
@@ -328,8 +252,9 @@ as $$
   );
 $$;
 
--- Server-only vote functions make switching a single-answer vote atomic and
--- make multi-answer selections idempotent.
+-- Compatibility RPC for the new app. Until the finalize migration runs it
+-- behaves like a single-answer vote because the legacy unique constraint is
+-- intentionally still present.
 create or replace function public.cast_poll_vote(
   p_poll_id uuid,
   p_user_id uuid,
@@ -383,17 +308,12 @@ begin
     raise exception 'Invalid poll option' using errcode = '23514';
   end if;
 
-  if multiple_answers is not true then
-    delete from public.votes
-    where poll_id = p_poll_id
-      and user_id = p_user_id
-      and option_id <> p_option_id;
-  end if;
-
   insert into public.votes (poll_id, user_id, option_id)
   values (p_poll_id, p_user_id, p_option_id)
-  on conflict (poll_id, user_id, option_id)
-  do update set updated_at = now()
+  on conflict (poll_id, user_id)
+  do update set
+    option_id = excluded.option_id,
+    updated_at = now()
   returning * into saved_vote;
 
   return query
@@ -439,24 +359,83 @@ begin
 end;
 $$;
 
+drop function if exists public.admin_poll_catalog();
+
+create function public.admin_poll_catalog()
+returns table (
+  id uuid,
+  creator_id uuid,
+  creator_battletag text,
+  slug text,
+  title text,
+  description text,
+  category text,
+  status text,
+  created_at timestamptz,
+  published_at timestamptz,
+  trash_reason text,
+  trashed_at timestamptz,
+  trash_expires_at timestamptz,
+  allow_multiple_answers boolean,
+  total_votes bigint,
+  options jsonb
+)
+language sql
+security definer
+set search_path = ''
+as $$
+  select
+    p.id,
+    p.creator_id,
+    u.battletag as creator_battletag,
+    p.slug,
+    p.title,
+    p.description,
+    p.category,
+    p.status,
+    p.created_at,
+    p.published_at,
+    p.trash_reason,
+    p.trashed_at,
+    p.trash_expires_at,
+    p.allow_multiple_answers,
+    (select count(*) from public.votes v where v.poll_id = p.id) as total_votes,
+    coalesce(
+      (
+        select jsonb_agg(
+          jsonb_build_object(
+            'id', po.id,
+            'text', po.text,
+            'position', po.position,
+            'is_neutral', po.is_neutral
+          )
+          order by po.position
+        )
+        from public.poll_options po
+        where po.poll_id = p.id
+      ),
+      '[]'::jsonb
+    ) as options
+  from public.polls p
+  join public.users u on u.id = p.creator_id
+  where p.status in ('draft', 'open', 'hidden')
+  order by p.created_at desc;
+$$;
+
 revoke all on function public.submit_poll(uuid,text,text,text,text,text[],boolean) from public, anon, authenticated;
 revoke all on function public.submit_poll(uuid,text,text,text,text,text[]) from public, anon, authenticated;
 revoke all on function public.cast_poll_vote(uuid,uuid,uuid) from public, anon, authenticated;
 revoke all on function public.retract_poll_vote(uuid,uuid,uuid) from public, anon, authenticated;
+revoke all on function public.admin_poll_catalog() from public, anon, authenticated;
 
 grant execute on function public.submit_poll(uuid,text,text,text,text,text[],boolean) to service_role;
 grant execute on function public.submit_poll(uuid,text,text,text,text,text[]) to service_role;
 grant execute on function public.cast_poll_vote(uuid,uuid,uuid) to service_role;
 grant execute on function public.retract_poll_vote(uuid,uuid,uuid) to service_role;
+grant execute on function public.admin_poll_catalog() to service_role;
 
 comment on column public.polls.allow_multiple_answers is
   'When true, a verified voter may select more than one option. Immutable after publication.';
 
-comment on table public.votes is
-  'One row per selected option. Single-answer polls are enforced by guard_vote; multi-answer polls allow one row per option per Battle.net-backed voter.';
-
-comment on function public.cast_poll_vote(uuid,uuid,uuid) is
-  'Atomically casts a vote. Replaces the prior selection on single-answer polls and adds a selection on multi-answer polls.';
-
-comment on function public.retract_poll_vote(uuid,uuid,uuid) is
-  'Removes one selected option for a verified server-authenticated voter.';
+comment on function public.admin_poll_catalog() is
+  'Server-only admin poll catalog with voting mode, aggregated vote counts, and options for scalable moderation.';

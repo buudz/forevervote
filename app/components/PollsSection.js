@@ -245,7 +245,10 @@ export function PollsSection({ initialPolls = fallbackPolls, initialDatabaseRead
     }
 
     const currentPoll = pollState.polls.find((poll) => (poll.slug || poll.id) === pollSlug);
-    const isRetracting = currentPoll?.userVoteOptionId === optionId;
+    const selectedIds = Array.isArray(currentPoll?.userVoteOptionIds)
+      ? currentPoll.userVoteOptionIds
+      : (currentPoll?.userVoteOptionId ? [currentPoll.userVoteOptionId] : []);
+    const isRetracting = selectedIds.includes(optionId);
 
     setVotingOptionId(optionId);
     setStatusMessage("");
@@ -263,7 +266,11 @@ export function PollsSection({ initialPolls = fallbackPolls, initialDatabaseRead
       }
 
       await loadPolls(sort, voteFilter);
-      setStatusMessage(isRetracting ? "Vote removed." : "Vote saved.");
+      setStatusMessage(
+        isRetracting
+          ? "Selection removed."
+          : (currentPoll?.allowMultipleAnswers ? "Selection saved." : "Vote saved.")
+      );
     } catch (error) {
       setStatusMessage(error.message === "classic_profile_required"
         ? "A Classic WoW profile is required to vote."
