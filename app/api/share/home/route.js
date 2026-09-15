@@ -4,9 +4,6 @@ export const runtime = "edge";
 
 
 export async function GET() {
-  const brandMark = await fetch(
-    new URL("../../../../public/fv-scroll-mark-final.webp", import.meta.url)
-  ).then((response) => response.arrayBuffer());
   return new ImageResponse(
     <div style={{
       width: 1200,
@@ -84,7 +81,7 @@ export async function GET() {
       </div>
 
       <img
-        src={brandMark}
+        src="https://www.forevervote.com/fv-scroll-mark-final.webp"
         width="220"
         height="220"
         alt=""
