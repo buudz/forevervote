@@ -553,6 +553,15 @@ export async function getPendingPollSubmissions() {
   return (await getAdminPollQueues()).submissions;
 }
 
+export async function getPendingPollSubmissionCount() {
+  if (!isSupabaseConfigured()) {
+    return 0;
+  }
+
+  const rows = await supabaseRequest("/polls?select=id&status=eq.draft");
+  return Array.isArray(rows) ? rows.length : 0;
+}
+
 export async function updatePollAdminState({ pollId, action }) {
   const rows = await supabaseRequest(
     `/polls?select=id,slug,status,trash_reason,trash_expires_at&id=eq.${encodeFilterValue(pollId)}&limit=1`
