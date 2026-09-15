@@ -6,12 +6,12 @@ export function SiteHeader() {
       <a className="brand" href="/" aria-label="ForeverVote home">
         <img
           className="brand-logo"
-          src="/fv-logo-small.svg"
-          width="42"
-          height="42"
+          src="/fv-scroll-mark.svg"
+          width="58"
+          height="58"
           alt=""
           aria-hidden="true"
-          style={{ width: 42, height: 42, objectFit: "contain", flex: "0 0 auto" }}
+          style={{ width: 58, height: 58, objectFit: "contain", flex: "0 0 auto" }}
         />
         <span className="brand-copy">
           <strong>ForeverVote</strong>
