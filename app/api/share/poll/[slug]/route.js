@@ -1,5 +1,4 @@
 import { ImageResponse } from "next/og";
-import { BrandScrollMark } from "../../../../components/BrandScrollMark";
 import { getPollShareData } from "../../../../lib/supabase/polls";
 
 export const dynamic = "force-dynamic";
@@ -156,7 +155,17 @@ export async function GET(_request, context) {
         justifyContent: "center",
         background: "radial-gradient(circle at 50% 48%, rgba(47,149,200,.10), rgba(4,16,26,0) 70%)"
       }}>
-        <BrandScrollMark size={104} title="" />
+        <img
+          src="https://www.forevervote.com/fv-scroll-mark-final.webp?v=locked-20260915"
+          width="104"
+          height="104"
+          alt=""
+          style={{
+            width: 104,
+            height: 104,
+            objectFit: "contain"
+          }}
+        />
       </div>
 
       <div style={{
