@@ -12,6 +12,7 @@ export function LaunchHero() {
         <div className="hero-actions">
           <a className="button primary" href="/submit">Submit</a>
           <a className="button secondary" href="#polls">Browse polls</a>
+          <a className="button secondary" href="/profile">Check honor level</a>
         </div>
       </div>
       <div className="hero-emblem">
