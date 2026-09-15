@@ -223,11 +223,7 @@ export async function submitPollDraft({ creatorId, slug, title, description, cat
   return rows?.[0] || null;
 }
 
-export async function getPendingPollSubmissions() {
-  const rows = await supabaseRequest(
-    "/polls?select=id,creator_id,slug,title,description,category,status,created_at,poll_options(id,text,position,is_neutral)&status=eq.draft&order=created_at.asc"
-  );
-
+async function getAdminUsersByCreator(rows) {
   const creatorIds = [...new Set(rows.map((row) => row.creator_id).filter(Boolean))];
   const usersById = new Map();
 
@@ -238,7 +234,11 @@ export async function getPendingPollSubmissions() {
     users.forEach((user) => usersById.set(user.id, user.battletag));
   }
 
-  return rows.map((row) => ({
+  return usersById;
+}
+
+function buildAdminPoll(row, usersById) {
+  return {
     id: row.id,
     slug: row.slug,
     title: row.title,
@@ -246,7 +246,12 @@ export async function getPendingPollSubmissions() {
     category: row.category,
     status: row.status,
     createdAt: row.created_at,
+    publishedAt: row.published_at,
     creatorBattleTag: usersById.get(row.creator_id) || "Unknown BattleTag",
+    trashReason: row.trash_reason || null,
+    trashedAt: row.trashed_at || null,
+    trashExpiresAt: row.trash_expires_at || null,
+    totalVotes: Array.isArray(row.votes) ? row.votes.length : 0,
     options: (row.poll_options || [])
       .sort(sortByPosition)
       .map((option) => ({
@@ -255,38 +260,125 @@ export async function getPendingPollSubmissions() {
         position: option.position,
         isNeutral: Boolean(option.is_neutral)
       }))
-  }));
+  };
 }
 
-export async function moderatePollSubmission({ pollId, action }) {
-  const nextStatus = action === "publish" ? "open" : action === "reject" ? "hidden" : null;
+export async function purgeExpiredPollTrash() {
+  const now = new Date().toISOString();
 
-  if (!nextStatus) {
-    const error = new Error("Invalid moderation action");
-    error.status = 400;
-    throw error;
-  }
-
-  const rows = await supabaseRequest(
-    `/polls?id=eq.${encodeFilterValue(pollId)}&status=eq.draft`,
+  await supabaseRequest(
+    `/polls?status=eq.hidden&trash_expires_at=lt.${encodeFilterValue(now)}`,
     {
-      method: "PATCH",
-      headers: {
-        Prefer: "return=representation"
-      },
-      body: JSON.stringify({ status: nextStatus })
+      method: "DELETE",
+      headers: { Prefer: "return=minimal" }
     }
   );
+}
 
-  if (!rows?.[0]) {
-    const error = new Error("Pending poll not found");
+export async function getAdminPollQueues() {
+  await purgeExpiredPollTrash();
+
+  const rows = await supabaseRequest(
+    "/polls?select=id,creator_id,slug,title,description,category,status,created_at,published_at,trash_reason,trashed_at,trash_expires_at,poll_options(id,text,position,is_neutral),votes(id)&status=in.(draft,open,hidden)&order=created_at.desc"
+  );
+
+  const usersById = await getAdminUsersByCreator(rows);
+  const polls = rows.map((row) => buildAdminPoll(row, usersById));
+  const activeTrash = (poll) => poll.trashExpiresAt && new Date(poll.trashExpiresAt).getTime() > Date.now();
+
+  return {
+    submissions: polls.filter((poll) => poll.status === "draft"),
+    live: polls.filter((poll) => poll.status === "open"),
+    rejected: polls.filter((poll) => poll.status === "hidden" && poll.trashReason === "rejected" && activeTrash(poll)),
+    unpublished: polls.filter((poll) => poll.status === "hidden" && poll.trashReason === "unpublished" && activeTrash(poll))
+  };
+}
+
+export async function getPendingPollSubmissions() {
+  return (await getAdminPollQueues()).submissions;
+}
+
+export async function updatePollAdminState({ pollId, action }) {
+  const rows = await supabaseRequest(
+    `/polls?select=id,slug,status,trash_reason,trash_expires_at&id=eq.${encodeFilterValue(pollId)}&limit=1`
+  );
+  const poll = rows?.[0];
+
+  if (!poll) {
+    const error = new Error("Poll not found");
     error.status = 404;
     throw error;
   }
 
+  const now = new Date();
+  let expectedStatus;
+  let patch;
+
+  if (action === "publish" && poll.status === "draft") {
+    expectedStatus = "draft";
+    patch = {
+      status: "open",
+      trash_reason: null,
+      trashed_at: null,
+      trash_expires_at: null
+    };
+  } else if (action === "reject" && poll.status === "draft") {
+    expectedStatus = "draft";
+    patch = {
+      status: "hidden",
+      trash_reason: "rejected",
+      trashed_at: now.toISOString(),
+      trash_expires_at: new Date(now.getTime() + (2 * 24 * 60 * 60 * 1000)).toISOString()
+    };
+  } else if (action === "unpublish" && poll.status === "open") {
+    expectedStatus = "open";
+    patch = {
+      status: "hidden",
+      trash_reason: "unpublished",
+      trashed_at: now.toISOString(),
+      trash_expires_at: new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000)).toISOString()
+    };
+  } else if (action === "restore" && poll.status === "hidden" && ["rejected", "unpublished"].includes(poll.trash_reason)) {
+    if (!poll.trash_expires_at || new Date(poll.trash_expires_at).getTime() <= now.getTime()) {
+      await purgeExpiredPollTrash();
+      const error = new Error("Recycle-bin retention period has expired");
+      error.status = 410;
+      throw error;
+    }
+
+    expectedStatus = "hidden";
+    patch = {
+      status: poll.trash_reason === "rejected" ? "draft" : "open",
+      trash_reason: null,
+      trashed_at: null,
+      trash_expires_at: null
+    };
+  } else {
+    const error = new Error("Invalid admin action for current poll state");
+    error.status = 400;
+    throw error;
+  }
+
+  const updated = await supabaseRequest(
+    `/polls?id=eq.${encodeFilterValue(pollId)}&status=eq.${expectedStatus}`,
+    {
+      method: "PATCH",
+      headers: { Prefer: "return=representation" },
+      body: JSON.stringify(patch)
+    }
+  );
+
+  if (!updated?.[0]) {
+    const error = new Error("Poll state changed before the action completed");
+    error.status = 409;
+    throw error;
+  }
+
   return {
-    id: rows[0].id,
-    slug: rows[0].slug,
-    status: rows[0].status
+    id: updated[0].id,
+    slug: updated[0].slug,
+    status: updated[0].status,
+    trashReason: updated[0].trash_reason || null,
+    trashExpiresAt: updated[0].trash_expires_at || null
   };
 }
