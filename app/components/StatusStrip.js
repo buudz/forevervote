@@ -1,7 +1,7 @@
 const statusItems = [
   { number: "01", title: "Login with Battle.net", detail: "Verify a real WoW account before voting" },
-  { number: "02", title: "One vote per poll", detail: "One vote per eligible WoW player" },
-  { number: "03", title: "Change your mind", detail: "Pick another option to update your vote" }
+  { number: "02", title: "Account-backed voting", detail: "One verified account; some polls allow multiple answers" },
+  { number: "03", title: "Change your mind", detail: "Add, remove, or switch selections whenever the poll allows it" }
 ];
 
 export function StatusStrip() {

@@ -116,7 +116,7 @@ function PollAdminCard({ poll, actions, busy, onAction, onEdit, trashLabel = "" 
   const meta = [
     poll.creatorBattleTag,
     formatDate(poll.createdAt),
-    `${poll.totalVotes || 0} vote${poll.totalVotes === 1 ? "" : "s"}`
+    `${poll.totalVotes || 0} ${poll.allowMultipleAnswers ? "selection" : "vote"}${poll.totalVotes === 1 ? "" : "s"}`
   ].filter(Boolean).join(" · ");
 
   async function toggleHistory() {
@@ -162,6 +162,7 @@ function PollAdminCard({ poll, actions, busy, onAction, onEdit, trashLabel = "" 
     </div>
     <h3>{poll.title}</h3>
     {poll.rationale && <p className="context">{poll.rationale}</p>}
+    {poll.allowMultipleAnswers && <p className="multi-answer-note">Voting mode: multiple answers allowed</p>}
 
     <div className="moderation-options">
       {poll.options.map((option) => <span key={option.id}>{option.text}</span>)}

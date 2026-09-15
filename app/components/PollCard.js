@@ -1,13 +1,33 @@
-function optionPercent(option, totalVotes) {
-  if (!totalVotes) {
+function optionPercent(option, totalVoters) {
+  if (!totalVoters) {
     return 0;
   }
 
-  return Math.round((option.voteCount / totalVotes) * 100);
+  return Math.round((option.voteCount / totalVoters) * 100);
 }
 
-export function PollCard({ poll, canVote, authReady, databaseReady, onShare, onVote, votingOptionId }) {
+function selectedOptionIds(poll) {
+  if (Array.isArray(poll.userVoteOptionIds)) {
+    return poll.userVoteOptionIds;
+  }
+
+  return poll.userVoteOptionId ? [poll.userVoteOptionId] : [];
+}
+
+export function PollCard({
+  poll,
+  canVote,
+  authReady,
+  databaseReady,
+  onShare,
+  onVote,
+  votingOptionId,
+  standalone = false
+}) {
   const context = poll.rationale || poll.context;
+  const selectedIds = selectedOptionIds(poll);
+  const hasVote = selectedIds.length > 0;
+  const totalVoters = Number(poll.totalVoters ?? poll.totalVotes ?? 0);
   const disabledReason = !authReady
     ? "Checking login…"
     : !databaseReady
@@ -16,18 +36,35 @@ export function PollCard({ poll, canVote, authReady, databaseReady, onShare, onV
         ? "Login with Battle.net to vote"
         : "";
 
+  const voteHelp = poll.allowMultipleAnswers
+    ? (hasVote
+        ? "Your selections are saved. Choose more answers or click a selected answer to remove it."
+        : "Select one or more answers.")
+    : (hasVote
+        ? "Your vote is saved. Click it again to remove it, or choose another option."
+        : "Choose one option to vote.");
+
   return <article className="poll-card" id={poll.slug || poll.id}>
     <div className="card-ornament" aria-hidden="true">◆</div>
     <div className="card-top">
       <span className="category">{poll.category}</span>
-      <span className="draft">{databaseReady ? `${poll.totalVotes || 0} votes` : "Voting soon"}</span>
+      <span className="draft">
+        {databaseReady
+          ? `${poll.allowMultipleAnswers ? "Multiple answers · " : ""}${totalVoters} voter${totalVoters === 1 ? "" : "s"}`
+          : "Voting soon"}
+      </span>
     </div>
-    <h3><a className="poll-title-link" href={`/polls/${poll.slug || poll.id}`}>{poll.title}</a></h3>
+    <h3>
+      {standalone
+        ? poll.title
+        : <a className="poll-title-link" href={`/polls/${poll.slug || poll.id}`}>{poll.title}</a>}
+    </h3>
     {context && <p className="context">{context}</p>}
+    {poll.allowMultipleAnswers && <p className="multi-answer-note">Multiple answers allowed — percentages can add up to more than 100%.</p>}
     <div className="option-preview" aria-label="Poll options">
       {poll.options.map((option) => {
-        const selected = poll.userVoteOptionId === option.id;
-        const percent = optionPercent(option, poll.totalVotes);
+        const selected = selectedIds.includes(option.id);
+        const percent = optionPercent(option, totalVoters);
         const isVoting = votingOptionId === option.id;
 
         return <button
@@ -44,12 +81,12 @@ export function PollCard({ poll, canVote, authReady, databaseReady, onShare, onV
       })}
     </div>
     <div className="card-footer">
-      <span>{poll.userVoteOptionId ? "Your vote is saved. Click it again to remove it, or choose another option." : disabledReason || "Choose one option to vote."}</span>
+      <span>{disabledReason || voteHelp}</span>
       <div className="card-footer-actions">
         {poll.editCount > 0 && <a href={`/polls/${poll.slug}#edit-history`}>
           Edited · History ({poll.editCount})
         </a>}
-        <button onClick={() => onShare(poll)} aria-label={"Share poll: " + poll.title}>Share ↗</button>
+        {onShare && <button onClick={() => onShare(poll)} aria-label={"Share poll: " + poll.title}>Share ↗</button>}
       </div>
     </div>
   </article>;

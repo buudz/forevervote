@@ -50,13 +50,19 @@ function sortPolls(polls, sort) {
   return sorted.sort(sortByDisplayOrder);
 }
 
+function hasUserVote(poll) {
+  return Array.isArray(poll.userVoteOptionIds)
+    ? poll.userVoteOptionIds.length > 0
+    : Boolean(poll.userVoteOptionId);
+}
+
 function filterPollsByVoteState(polls, voteFilter) {
   if (voteFilter === "voted") {
-    return polls.filter((poll) => Boolean(poll.userVoteOptionId));
+    return polls.filter(hasUserVote);
   }
 
   if (voteFilter === "unvoted") {
-    return polls.filter((poll) => !poll.userVoteOptionId);
+    return polls.filter((poll) => !hasUserVote(poll));
   }
 
   return polls;
@@ -76,7 +82,10 @@ function buildPoll(row, userVotesByPollId = new Map(), editCountsByPollId = new 
         voteCount
       };
     });
-  const totalVotes = options.reduce((total, option) => total + option.voteCount, 0);
+  const voterIds = new Set(votes.map((vote) => vote.user_id).filter(Boolean));
+  const totalSelections = options.reduce((total, option) => total + option.voteCount, 0);
+  const totalVoters = voterIds.size || totalSelections;
+  const userVoteOptionIds = userVotesByPollId.get(row.id) || [];
 
   return {
     id: row.slug,
@@ -90,11 +99,16 @@ function buildPoll(row, userVotesByPollId = new Map(), editCountsByPollId = new 
     status: row.status,
     createdAt: row.created_at,
     publishedAt: row.published_at,
+    updatedAt: row.updated_at,
     allowCustomAnswers: Boolean(row.allow_custom_answers),
+    allowMultipleAnswers: Boolean(row.allow_multiple_answers),
     options,
-    totalVotes,
+    totalVotes: totalVoters,
+    totalVoters,
+    totalSelections,
     editCount: editCountsByPollId.get(row.id) || 0,
-    userVoteOptionId: userVotesByPollId.get(row.id) || null
+    userVoteOptionIds,
+    userVoteOptionId: userVoteOptionIds[0] || null
   };
 }
 
@@ -128,7 +142,7 @@ export async function getOpenPollsForSession(session, options = {}) {
   }
 
   const rows = await supabaseRequest(
-    "/polls?select=id,slug,title,description,category,status,display_order,created_at,published_at,allow_custom_answers,poll_options(id,text,position,is_neutral),votes(option_id)&status=eq.open&order=created_at.asc"
+    "/polls?select=id,slug,title,description,category,status,display_order,created_at,published_at,updated_at,allow_custom_answers,allow_multiple_answers,poll_options(id,text,position,is_neutral),votes(user_id,option_id)&status=eq.open&order=created_at.asc"
   );
 
   const pollIds = rows.map((row) => row.id).filter(Boolean);
@@ -144,7 +158,11 @@ export async function getOpenPollsForSession(session, options = {}) {
       const votes = await supabaseRequest(
         `/votes?select=poll_id,option_id&user_id=eq.${encodeFilterValue(user.id)}&poll_id=in.(${idList})`
       );
-      votes.forEach((vote) => userVotesByPollId.set(vote.poll_id, vote.option_id));
+      votes.forEach((vote) => {
+        const current = userVotesByPollId.get(vote.poll_id) || [];
+        current.push(vote.option_id);
+        userVotesByPollId.set(vote.poll_id, current);
+      });
     }
   }
 
@@ -159,6 +177,37 @@ export async function getOpenPollsForSession(session, options = {}) {
     availableVoteFilters: POLL_VOTE_FILTERS,
     polls: filterPollsByVoteState(sortedPolls, voteFilter)
   };
+}
+
+export async function getOpenPollForSession(session, slug) {
+  if (!isSupabaseConfigured()) {
+    return null;
+  }
+
+  const rows = await supabaseRequest(
+    `/polls?select=id,slug,title,description,category,status,display_order,created_at,published_at,updated_at,allow_custom_answers,allow_multiple_answers,poll_options(id,text,position,is_neutral),votes(user_id,option_id)&slug=eq.${encodeFilterValue(slug)}&status=eq.open&limit=1`
+  );
+  const row = rows?.[0];
+
+  if (!row) {
+    return null;
+  }
+
+  const userVotesByPollId = new Map();
+  const battlenetAccountId = session?.user?.battlenetAccountId;
+
+  if (battlenetAccountId) {
+    const user = await getUserByBattleNetAccountId(battlenetAccountId);
+
+    if (user?.id) {
+      const votes = await supabaseRequest(
+        `/votes?select=option_id&user_id=eq.${encodeFilterValue(user.id)}&poll_id=eq.${encodeFilterValue(row.id)}`
+      );
+      userVotesByPollId.set(row.id, (votes || []).map((vote) => vote.option_id));
+    }
+  }
+
+  return buildPoll(row, userVotesByPollId, new Map());
 }
 
 export async function getOpenPollBySlug(slug) {
@@ -197,13 +246,16 @@ export async function getPollShareData(slug) {
   }
 
   const rows = await supabaseRequest(
-    `/polls?select=id,slug,title,description,category,status,created_at,published_at,updated_at,poll_options(text,position,is_neutral)&slug=eq.${encodeFilterValue(slug)}&status=eq.open&limit=1`
+    `/polls?select=id,slug,title,description,category,status,created_at,published_at,updated_at,allow_multiple_answers,poll_options(id,text,position,is_neutral),votes(user_id,option_id)&slug=eq.${encodeFilterValue(slug)}&status=eq.open&limit=1`
   );
 
   const row = rows?.[0];
   if (!row) {
     return null;
   }
+
+  const votes = Array.isArray(row.votes) ? row.votes : [];
+  const totalVoters = new Set(votes.map((vote) => vote.user_id).filter(Boolean)).size;
 
   return {
     id: row.id,
@@ -214,12 +266,20 @@ export async function getPollShareData(slug) {
     createdAt: row.created_at,
     publishedAt: row.published_at,
     updatedAt: row.updated_at,
+    allowMultipleAnswers: Boolean(row.allow_multiple_answers),
+    totalVoters,
+    totalVotes: totalVoters,
+    totalSelections: votes.length,
+    userVoteOptionIds: [],
+    userVoteOptionId: null,
     options: (row.poll_options || [])
       .sort(sortByPosition)
       .map((option) => ({
+        id: option.id,
         text: option.text,
         position: option.position,
-        isNeutral: Boolean(option.is_neutral)
+        isNeutral: Boolean(option.is_neutral),
+        voteCount: votes.filter((vote) => vote.option_id === option.id).length
       }))
   };
 }
@@ -299,15 +359,12 @@ export async function castVote({ pollSlug, optionId, userId }) {
     throw error;
   }
 
-  const rows = await supabaseRequest("/votes?on_conflict=poll_id,user_id", {
+  const rows = await supabaseRequest("/rpc/cast_poll_vote", {
     method: "POST",
-    headers: {
-      Prefer: "resolution=merge-duplicates,return=representation"
-    },
     body: JSON.stringify({
-      poll_id: poll.id,
-      user_id: userId,
-      option_id: optionId
+      p_poll_id: poll.id,
+      p_user_id: userId,
+      p_option_id: optionId
     })
   });
 
@@ -323,18 +380,19 @@ export async function retractVote({ pollSlug, optionId, userId }) {
     throw error;
   }
 
-  const rows = await supabaseRequest(
-    `/votes?poll_id=eq.${encodeFilterValue(poll.id)}&user_id=eq.${encodeFilterValue(userId)}&option_id=eq.${encodeFilterValue(optionId)}`,
-    {
-      method: "DELETE",
-      headers: { Prefer: "return=representation" }
-    }
-  );
+  const removed = await supabaseRequest("/rpc/retract_poll_vote", {
+    method: "POST",
+    body: JSON.stringify({
+      p_poll_id: poll.id,
+      p_user_id: userId,
+      p_option_id: optionId
+    })
+  });
 
-  return rows?.[0] || null;
+  return Boolean(removed);
 }
 
-export async function submitPollDraft({ creatorId, slug, title, description, category, options }) {
+export async function submitPollDraft({ creatorId, slug, title, description, category, options, allowMultipleAnswers = false }) {
   const rows = await supabaseRequest("/rpc/submit_poll", {
     method: "POST",
     body: JSON.stringify({
@@ -343,7 +401,8 @@ export async function submitPollDraft({ creatorId, slug, title, description, cat
       p_title: title,
       p_description: description,
       p_category: category,
-      p_options: options
+      p_options: options,
+      p_allow_multiple_answers: Boolean(allowMultipleAnswers)
     })
   });
 
@@ -364,6 +423,7 @@ function buildAdminPoll(row) {
     trashReason: row.trash_reason || null,
     trashedAt: row.trashed_at || null,
     trashExpiresAt: row.trash_expires_at || null,
+    allowMultipleAnswers: Boolean(row.allow_multiple_answers),
     totalVotes: Number(row.total_votes || 0),
     options: (row.options || [])
       .sort(sortByPosition)
