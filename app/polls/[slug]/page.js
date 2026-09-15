@@ -157,7 +157,7 @@ export default async function PollSharePage({ params }) {
             </div>
 
             <p className="public-edit-history-intro">
-              ForeverVote records every admin change to a poll title or rationale so wording cannot be changed silently after publication.
+              ForeverVote records every admin change to a poll title, rationale, or voting mode so poll rules cannot be changed silently.
             </p>
 
             <div className="public-edit-history-list">
@@ -178,6 +178,12 @@ export default async function PollSharePage({ params }) {
                     <small>Rationale</small>
                     <div><span>Before</span><p>{entry.oldRationale || "No rationale"}</p></div>
                     <div><span>After</span><p>{entry.newRationale || "No rationale"}</p></div>
+                  </div>}
+
+                  {entry.changedFields?.includes("voting_mode") && <div className="public-edit-diff">
+                    <small>Voting mode</small>
+                    <div><span>Before</span><p>{entry.oldAllowMultipleAnswers ? "Multiple answers" : "Single answer"}</p></div>
+                    <div><span>After</span><p>{entry.newAllowMultipleAnswers ? "Multiple answers" : "Single answer"}</p></div>
                   </div>}
                 </div>
               </details>)}
