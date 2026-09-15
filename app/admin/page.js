@@ -3,8 +3,18 @@ import { SiteFooter } from "../components/SiteFooter";
 import { SiteHeader } from "../components/SiteHeader";
 
 export const metadata = {
-  title: "Admin · ForeverVote",
-  description: "ForeverVote poll moderation."
+  title: "Admin",
+  description: "ForeverVote poll moderation.",
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true
+    }
+  }
 };
 
 export default function AdminPage() {

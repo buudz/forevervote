@@ -90,7 +90,7 @@ function openShareWindow(url) {
   window.open(url, "_blank", "noopener,noreferrer,width=760,height=620");
 }
 
-export function PollsSection() {
+export function PollsSection({ initialPolls = fallbackPolls, initialDatabaseReady = false }) {
   const [category, setCategory] = useState("All");
   const [sort, setSort] = useState("explore");
   const [voteFilter, setVoteFilter] = useState("all");
@@ -98,7 +98,11 @@ export function PollsSection() {
   const [sharePayload, setSharePayload] = useState(null);
   const [statusMessage, setStatusMessage] = useState("");
   const [auth, setAuth] = useState({ loading: true, authenticated: false });
-  const [pollState, setPollState] = useState({ loading: true, databaseReady: false, polls: fallbackPolls });
+  const [pollState, setPollState] = useState({
+    loading: false,
+    databaseReady: initialDatabaseReady,
+    polls: initialDatabaseReady ? initialPolls : fallbackPolls
+  });
   const [votingOptionId, setVotingOptionId] = useState(null);
 
   const authReady = !auth.loading;
