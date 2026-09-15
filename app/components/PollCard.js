@@ -45,7 +45,12 @@ export function PollCard({ poll, canVote, authReady, databaseReady, onShare, onV
     </div>
     <div className="card-footer">
       <span>{poll.userVoteOptionId ? "Your vote is saved. Click it again to remove it, or choose another option." : disabledReason || "Choose one option to vote."}</span>
-      <button onClick={() => onShare(poll)} aria-label={"Share poll: " + poll.title}>Share ↗</button>
+      <div className="card-footer-actions">
+        {poll.editCount > 0 && <a href={`/polls/${poll.slug}#edit-history`}>
+          Edited · History ({poll.editCount})
+        </a>}
+        <button onClick={() => onShare(poll)} aria-label={"Share poll: " + poll.title}>Share ↗</button>
+      </div>
     </div>
   </article>;
 }
