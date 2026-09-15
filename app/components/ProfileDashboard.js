@@ -1,9 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { pollCategories } from "../data/polls";
 
 const categories = pollCategories.filter((category) => category !== "All");
+const PROFILE_SORT_OPTIONS = [
+  { value: "newest", label: "Newest" },
+  { value: "oldest", label: "Oldest" },
+  { value: "popular", label: "Most votes" },
+  { value: "az", label: "A–Z" }
+];
 
 function formatDate(value) {
   if (!value) return "";
@@ -20,6 +26,39 @@ function statusLabel(poll) {
   if (poll.trashReason === "rejected") return "Rejected";
   if (poll.trashReason === "unpublished") return "Unpublished";
   return poll.status || "Submitted";
+}
+
+function searchablePollText(poll) {
+  return [
+    poll.title,
+    poll.category,
+    statusLabel(poll),
+    poll.rationale,
+    ...(poll.options || []).map((option) => option.text),
+    ...(poll.selectedOptionTexts || [])
+  ].filter(Boolean).join(" ").toLocaleLowerCase();
+}
+
+function sortProfilePolls(polls, sort) {
+  const list = [...polls];
+
+  if (sort === "oldest") {
+    return list.sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+  }
+
+  if (sort === "popular") {
+    return list.sort((a, b) => {
+      const voteDifference = Number(b.totalVoters || 0) - Number(a.totalVoters || 0);
+      if (voteDifference !== 0) return voteDifference;
+      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+    });
+  }
+
+  if (sort === "az") {
+    return list.sort((a, b) => String(a.title || "").localeCompare(String(b.title || "")));
+  }
+
+  return list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 }
 
 function PollRow({ poll, kind, onEdit }) {
@@ -51,21 +90,81 @@ function PollRow({ poll, kind, onEdit }) {
   </article>;
 }
 
-function PollSection({ title, description, polls, kind, emptyText, onEdit }) {
-  return <section className="profile-section">
-    <div className="profile-section-heading">
-      <div>
-        <p className="kicker">{description}</p>
-        <h2>{title}</h2>
-      </div>
-      <span className="count-badge">{polls.length}</span>
-    </div>
+function PollSection({
+  title,
+  description,
+  polls,
+  kind,
+  emptyText,
+  onEdit,
+  defaultOpen = true
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const [sort, setSort] = useState("newest");
+  const [query, setQuery] = useState("");
 
-    {polls.length
-      ? <div className="profile-poll-list">
-          {polls.map((poll) => <PollRow key={poll.id} poll={poll} kind={kind} onEdit={onEdit} />)}
-        </div>
-      : <div className="profile-empty">{emptyText}</div>}
+  const filteredPolls = useMemo(() => {
+    const normalizedQuery = query.trim().toLocaleLowerCase();
+    const matching = normalizedQuery
+      ? polls.filter((poll) => searchablePollText(poll).includes(normalizedQuery))
+      : polls;
+
+    return sortProfilePolls(matching, sort);
+  }, [polls, query, sort]);
+
+  return <section className={open ? "profile-section open" : "profile-section collapsed"}>
+    <button
+      className="profile-section-toggle"
+      type="button"
+      aria-expanded={open}
+      onClick={() => setOpen((current) => !current)}
+    >
+      <span>
+        <small className="kicker">{description}</small>
+        <strong>{title}</strong>
+      </span>
+      <span className="profile-section-toggle-meta">
+        <span className="count-badge">{polls.length}</span>
+        <span className="collapse-icon" aria-hidden="true">{open ? "−" : "+"}</span>
+      </span>
+    </button>
+
+    {open && <div className="profile-section-content">
+      {polls.length === 0
+        ? <div className="profile-empty">{emptyText}</div>
+        : <>
+            <div className="profile-list-tools">
+              <label className="profile-search">
+                <span className="sr-only">Search {title}</span>
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Search title, category or option…"
+                />
+              </label>
+
+              <label className="profile-sort">
+                <span>Sort</span>
+                <select value={sort} onChange={(event) => setSort(event.target.value)}>
+                  {PROFILE_SORT_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+              </label>
+            </div>
+
+            <div className="profile-results-meta">
+              {query
+                ? `${filteredPolls.length} match${filteredPolls.length === 1 ? "" : "es"} of ${polls.length}`
+                : `${polls.length} poll${polls.length === 1 ? "" : "s"}`}
+            </div>
+
+            {filteredPolls.length === 0
+              ? <div className="profile-empty compact">No matching polls.</div>
+              : <div className="profile-poll-list">
+                  {filteredPolls.map((poll) => <PollRow key={poll.id} poll={poll} kind={kind} onEdit={onEdit} />)}
+                </div>}
+          </>}
+    </div>}
   </section>;
 }
 
@@ -261,12 +360,12 @@ export function ProfileDashboard() {
       <div>
         <p className="kicker">Battle.net profile</p>
         <h1>{profile.battletag}</h1>
-        <p className="profile-region">{profile.region ? profile.region.toUpperCase() : "Battle.net"} account connected</p>
+        <p className="profile-region">{profile.region ? profile.region.toUpperCase() : "Battle.net"} account verified</p>
       </div>
 
       <div className="profile-account-checks">
-        <div><span>WoW Retail account</span><strong className={profile.hasRetailProfile ? "profile-check yes" : "profile-check no"}>{profile.hasRetailProfile ? "✓ Connected" : "Not found"}</strong></div>
-        <div><span>WoW Classic account</span><strong className={profile.hasClassicProfile ? "profile-check yes" : "profile-check no"}>{profile.hasClassicProfile ? "✓ Connected" : "Not found"}</strong></div>
+        <div><span>WoW Retail account</span><strong className={profile.hasRetailProfile ? "profile-check yes" : "profile-check no"}>{profile.hasRetailProfile ? "✓ Verified" : "Not found"}</strong></div>
+        <div><span>WoW Classic account</span><strong className={profile.hasClassicProfile ? "profile-check yes" : "profile-check no"}>{profile.hasClassicProfile ? "✓ Verified" : "Not found"}</strong></div>
       </div>
     </section>
 
@@ -278,6 +377,7 @@ export function ProfileDashboard() {
       polls={dashboard.submitted || []}
       emptyText="You have no pending or moderated submissions."
       onEdit={setEditingPoll}
+      defaultOpen
     />
 
     <PollSection
@@ -286,6 +386,7 @@ export function ProfileDashboard() {
       polls={dashboard.approved || []}
       emptyText="None of your polls are live yet."
       onEdit={setEditingPoll}
+      defaultOpen
     />
 
     <PollSection
@@ -294,6 +395,7 @@ export function ProfileDashboard() {
       polls={dashboard.voted || []}
       kind="voted"
       emptyText="You have not voted in any polls yet."
+      defaultOpen={false}
     />
   </div>;
 }
