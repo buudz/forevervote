@@ -17,22 +17,40 @@ function truncate(value, maxChars) {
   return text.length > maxChars ? `${text.slice(0, maxChars - 1).trim()}…` : text;
 }
 
-function getOptionLabels(options) {
+function optionPercent(option, totalVoters) {
+  if (!totalVoters) {
+    return 0;
+  }
+
+  return Math.round((Number(option.voteCount || 0) / totalVoters) * 100);
+}
+
+function getOptionLabels(options, totalVoters) {
   const maxVisible = 4;
   const selectable = options.filter((option) => !option.isNeutral);
   const labels = selectable.length ? selectable : options;
+  const visible = labels.slice(0, maxVisible);
 
   if (labels.length > maxVisible) {
     return [
-      ...labels.slice(0, maxVisible - 1).map((option) => option.text),
-      `+${labels.length - (maxVisible - 1)} more options`
+      ...visible.slice(0, maxVisible - 1).map((option) => ({
+        text: option.text,
+        percent: optionPercent(option, totalVoters)
+      })),
+      {
+        text: `+${labels.length - (maxVisible - 1)} more options`,
+        percent: null
+      }
     ];
   }
 
-  return labels.map((option) => option.text);
+  return visible.map((option) => ({
+    text: option.text,
+    percent: optionPercent(option, totalVoters)
+  }));
 }
 
-function OptionChip({ label, index }) {
+function OptionChip({ option, index }) {
   const column = index % 2;
   const row = Math.floor(index / 2);
 
@@ -53,7 +71,22 @@ function OptionChip({ label, index }) {
     fontWeight: 700,
     padding: "0 20px"
   }}>
-    {truncate(label, 28)}
+    <span style={{
+      display: "flex",
+      flex: 1,
+      minWidth: 0
+    }}>
+      {truncate(option.text, 26)}
+    </span>
+    {option.percent !== null && <span style={{
+      display: "flex",
+      marginLeft: 16,
+      color: "#F2D99B",
+      fontSize: 19,
+      fontWeight: 800
+    }}>
+      {option.percent}%
+    </span>}
   </div>;
 }
 
@@ -75,7 +108,8 @@ export async function GET(_request, context) {
     cleanTitle.length > 34 ? 50 :
     58;
   const titleLineHeight = titleFontSize + 6;
-  const optionLabels = getOptionLabels(poll.options);
+  const totalVoters = Number(poll.totalVoters ?? poll.totalVotes ?? 0);
+  const optionLabels = getOptionLabels(poll.options, totalVoters);
   const categoryWidth = Math.min(312, 122 + normalizeText(poll.category).length * 13);
 
   return new ImageResponse(
@@ -224,7 +258,7 @@ export async function GET(_request, context) {
         letterSpacing: 2.8
       }}>POLL OPTIONS</div>
 
-      {optionLabels.map((label, index) => <OptionChip key={`${label}-${index}`} label={label} index={index} />)}
+      {optionLabels.map((option, index) => <OptionChip key={`${option.text}-${index}`} option={option} index={index} />)}
 
       <div style={{
         position: "absolute",
