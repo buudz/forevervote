@@ -163,7 +163,7 @@ export default async function PollSharePage({ params }) {
             <div className="public-edit-history-list">
               {editHistory.map((entry, index) => <details key={entry.id} className="public-edit-history-entry" open={index === 0}>
                 <summary>
-                  <span>{formatDate(entry.editedAt)}</span>
+                  <span>{formatDate(entry.editedAt)} · {entry.editorRole === "creator" ? "Poll creator" : "Admin"}</span>
                   <strong>{(entry.changedFields || []).join(" + ") || "Poll wording"} changed</strong>
                 </summary>
 
@@ -184,6 +184,18 @@ export default async function PollSharePage({ params }) {
                     <small>Voting mode</small>
                     <div><span>Before</span><p>{entry.oldAllowMultipleAnswers ? "Multiple answers" : "Single answer"}</p></div>
                     <div><span>After</span><p>{entry.newAllowMultipleAnswers ? "Multiple answers" : "Single answer"}</p></div>
+                  </div>}
+
+                  {entry.changedFields?.includes("category") && <div className="public-edit-diff">
+                    <small>Category</small>
+                    <div><span>Before</span><p>{entry.oldCategory || "—"}</p></div>
+                    <div><span>After</span><p>{entry.newCategory || "—"}</p></div>
+                  </div>}
+
+                  {entry.changedFields?.includes("options") && <div className="public-edit-diff">
+                    <small>Options</small>
+                    <div><span>Before</span><p>{(entry.oldOptions || []).map((option) => option.text).join(" · ") || "—"}</p></div>
+                    <div><span>After</span><p>{(entry.newOptions || []).map((option) => option.text).join(" · ") || "—"}</p></div>
                   </div>}
                 </div>
               </details>)}
