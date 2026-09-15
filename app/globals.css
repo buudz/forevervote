@@ -459,3 +459,76 @@ h1 span{color:var(--gold-pale)}
 .trash-retention span{white-space:nowrap}
 .danger-action{border-color:rgba(150,91,67,.68);color:#D5B5A4}
 .danger-action:hover{border-color:#B9795C;color:var(--ivory)}
+
+
+/* Admin library controls */
+.admin-section-block{padding:0;overflow:hidden}
+.admin-section-toggle{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+  padding:clamp(20px,2.5vw,30px);
+  border:0;
+  background:transparent;
+  color:inherit;
+  text-align:left;
+}
+.admin-section-toggle:hover{background:rgba(15,79,137,.07)}
+.admin-section-toggle>span:first-child{display:grid;gap:7px}
+.admin-section-toggle .kicker{margin:0}
+.admin-section-toggle strong{
+  font-family:Cinzel,Georgia,serif;
+  color:var(--ivory);
+  font-size:clamp(23px,2vw,32px);
+  line-height:1.1;
+}
+.admin-section-toggle-meta{display:flex;align-items:center;gap:12px}
+.collapse-icon{
+  width:34px;
+  height:34px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(135,103,51,.45);
+  border-radius:7px;
+  background:#061522;
+  color:var(--gold-pale);
+  font-size:18px;
+  line-height:1;
+}
+.admin-section-content{
+  border-top:1px solid rgba(135,103,51,.25);
+  padding:0 clamp(20px,2.5vw,30px) clamp(22px,2.8vw,32px);
+}
+.admin-list-tools{
+  display:grid;
+  grid-template-columns:minmax(220px,1fr) minmax(160px,220px);
+  gap:12px;
+  align-items:end;
+  padding-top:20px;
+}
+.admin-search input,.admin-sort select{
+  width:100%;
+  min-height:42px;
+  border:1px solid rgba(135,103,51,.48);
+  border-radius:7px;
+  background:#061522;
+  color:var(--ivory);
+  padding:10px 12px;
+  font:inherit;
+  font-size:11px;
+  outline:none;
+}
+.admin-search input:focus,.admin-sort select:focus{border-color:var(--gold);box-shadow:0 0 0 2px rgba(188,152,84,.08)}
+.admin-sort{display:grid;gap:6px}
+.admin-sort>span{font-family:Cinzel,Georgia,serif;color:var(--gold-pale);font-size:8px;text-transform:uppercase;letter-spacing:1px}
+.admin-results-meta{margin:12px 0 0;color:var(--secondary);font-size:9px;text-transform:uppercase;letter-spacing:.7px}
+.admin-section-content .moderation-list{margin-top:14px}
+.admin-show-more{margin-top:16px}
+.admin-empty.compact{padding:28px 0 8px}
+@media(max-width:700px){
+  .admin-list-tools{grid-template-columns:1fr}
+  .admin-section-toggle{align-items:flex-start}
+  .admin-section-toggle-meta{flex:0 0 auto}
+}

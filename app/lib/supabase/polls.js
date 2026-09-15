@@ -223,21 +223,7 @@ export async function submitPollDraft({ creatorId, slug, title, description, cat
   return rows?.[0] || null;
 }
 
-async function getAdminUsersByCreator(rows) {
-  const creatorIds = [...new Set(rows.map((row) => row.creator_id).filter(Boolean))];
-  const usersById = new Map();
-
-  if (creatorIds.length > 0) {
-    const users = await supabaseRequest(
-      `/users?select=id,battletag&id=in.(${creatorIds.join(",")})`
-    );
-    users.forEach((user) => usersById.set(user.id, user.battletag));
-  }
-
-  return usersById;
-}
-
-function buildAdminPoll(row, usersById) {
+function buildAdminPoll(row) {
   return {
     id: row.id,
     slug: row.slug,
@@ -247,12 +233,12 @@ function buildAdminPoll(row, usersById) {
     status: row.status,
     createdAt: row.created_at,
     publishedAt: row.published_at,
-    creatorBattleTag: usersById.get(row.creator_id) || "Unknown BattleTag",
+    creatorBattleTag: row.creator_battletag || "Unknown BattleTag",
     trashReason: row.trash_reason || null,
     trashedAt: row.trashed_at || null,
     trashExpiresAt: row.trash_expires_at || null,
-    totalVotes: Array.isArray(row.votes) ? row.votes.length : 0,
-    options: (row.poll_options || [])
+    totalVotes: Number(row.total_votes || 0),
+    options: (row.options || [])
       .sort(sortByPosition)
       .map((option) => ({
         id: option.id,
@@ -278,12 +264,12 @@ export async function purgeExpiredPollTrash() {
 export async function getAdminPollQueues() {
   await purgeExpiredPollTrash();
 
-  const rows = await supabaseRequest(
-    "/polls?select=id,creator_id,slug,title,description,category,status,created_at,published_at,trash_reason,trashed_at,trash_expires_at,poll_options(id,text,position,is_neutral),votes(id)&status=in.(draft,open,hidden)&order=created_at.desc"
-  );
+  const rows = await supabaseRequest("/rpc/admin_poll_catalog", {
+    method: "POST",
+    body: JSON.stringify({})
+  });
 
-  const usersById = await getAdminUsersByCreator(rows);
-  const polls = rows.map((row) => buildAdminPoll(row, usersById));
+  const polls = (rows || []).map(buildAdminPoll);
   const activeTrash = (poll) => poll.trashExpiresAt && new Date(poll.trashExpiresAt).getTime() > Date.now();
 
   return {

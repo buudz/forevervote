@@ -15,24 +15,6 @@ export function SubmitPollForm() {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [submission, setSubmission] = useState(null);
-  const [adminQueue, setAdminQueue] = useState({ checked: false, allowed: false, submissions: [] });
-  const [moderating, setModerating] = useState("");
-
-  async function loadAdminQueue() {
-    try {
-      const response = await fetch("/api/admin/polls", { cache: "no-store" });
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok || !data.ok) {
-        setAdminQueue({ checked: true, allowed: false, submissions: [] });
-        return;
-      }
-
-      setAdminQueue({ checked: true, allowed: true, submissions: data.submissions || [] });
-    } catch {
-      setAdminQueue({ checked: true, allowed: false, submissions: [] });
-    }
-  }
 
   useEffect(() => {
     let active = true;
@@ -49,8 +31,6 @@ export function SubmitPollForm() {
           setAuth({ loading: false, authenticated: false });
         }
       });
-
-    loadAdminQueue();
 
     return () => {
       active = false;
@@ -99,42 +79,10 @@ export function SubmitPollForm() {
       setDescription("");
       setCategory("General");
       setOptions([...defaultOptions]);
-      await loadAdminQueue();
     } catch (error) {
       setMessage(error.message);
     } finally {
       setSubmitting(false);
-    }
-  }
-
-  async function moderate(pollId, action) {
-    if (action === "reject" && !window.confirm("Reject this submission? It will be hidden and will not go live.")) {
-      return;
-    }
-
-    setModerating(`${pollId}:${action}`);
-
-    try {
-      const response = await fetch("/api/admin/polls", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pollId, action })
-      });
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok || !data.ok) {
-        throw new Error("Could not update that submission.");
-      }
-
-      setAdminQueue((current) => ({
-        ...current,
-        submissions: current.submissions.filter((item) => item.id !== pollId)
-      }));
-      setMessage(action === "publish" ? "Poll approved and published." : "Submission rejected.");
-    } catch (error) {
-      setMessage(error.message);
-    } finally {
-      setModerating("");
     }
   }
 
@@ -159,126 +107,80 @@ export function SubmitPollForm() {
     </div>;
   }
 
-  return <div className="submit-stack">
-    <form className="submit-panel poll-form" onSubmit={submit}>
-      <div className="form-heading">
-        <div>
-          <p className="kicker">Community submission</p>
-          <h2>Create a poll</h2>
-        </div>
-        <span className="count-badge">Review required</span>
+  return <form className="submit-panel poll-form" onSubmit={submit}>
+    <div className="form-heading">
+      <div>
+        <p className="kicker">Community submission</p>
+        <h2>Create a poll</h2>
       </div>
+      <span className="count-badge">Review required</span>
+    </div>
 
-      <p className="form-intro">Keep the question clear and easy to understand. Add context only when it helps. Submissions are reviewed before they appear on the public poll board.</p>
+    <p className="form-intro">Keep the question clear and easy to understand. Add context only when it helps. Submissions are reviewed before they appear on the public poll board.</p>
 
-      <label className="field">
-        <span>Poll question</span>
-        <input
-          type="text"
-          minLength="10"
-          maxLength="180"
-          required
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          placeholder="Should WoW Forever…?"
-        />
-        <small>{title.length}/180</small>
-      </label>
+    <label className="field">
+      <span>Poll question</span>
+      <input
+        type="text"
+        minLength="10"
+        maxLength="180"
+        required
+        value={title}
+        onChange={(event) => setTitle(event.target.value)}
+        placeholder="Should WoW Forever…?"
+      />
+      <small>{title.length}/180</small>
+    </label>
 
-      <label className="field">
-        <span>Additional context <em>(optional)</em></span>
-        <textarea
-          maxLength="1500"
-          rows="5"
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-          placeholder="Add any background voters should know. Leave blank if the question stands on its own."
-        />
-        <small>{description.length}/1500</small>
-      </label>
+    <label className="field">
+      <span>Additional context <em>(optional)</em></span>
+      <textarea
+        maxLength="1500"
+        rows="5"
+        value={description}
+        onChange={(event) => setDescription(event.target.value)}
+        placeholder="Add any background voters should know. Leave blank if the question stands on its own."
+      />
+      <small>{description.length}/1500</small>
+    </label>
 
-      <label className="field">
-        <span>Category</span>
-        <select value={category} onChange={(event) => setCategory(event.target.value)}>
-          {categories.map((item) => <option key={item} value={item}>{item}</option>)}
-        </select>
-      </label>
+    <label className="field">
+      <span>Category</span>
+      <select value={category} onChange={(event) => setCategory(event.target.value)}>
+        {categories.map((item) => <option key={item} value={item}>{item}</option>)}
+      </select>
+    </label>
 
-      <fieldset className="option-editor">
-        <legend>Poll options</legend>
-        <p>Use 2–20 distinct answers.</p>
-        {options.map((option, index) => <div className="option-row" key={index}>
-          <label className="field option-field">
-            <span>Option {index + 1}</span>
-            <input
-              type="text"
-              maxLength="100"
-              required
-              value={option}
-              onChange={(event) => updateOption(index, event.target.value)}
-              placeholder={index === 0 ? "Yes" : index === 1 ? "No" : "Another choice"}
-            />
-          </label>
-          {options.length > 2 && <button className="remove-option" type="button" onClick={() => removeOption(index)}>Remove</button>}
-        </div>)}
-        {options.length < 20 && <button className="button secondary add-option" type="button" onClick={addOption}>+ Add option</button>}
-      </fieldset>
+    <fieldset className="option-editor">
+      <legend>Poll options</legend>
+      <p>Use 2–20 distinct answers.</p>
+      {options.map((option, index) => <div className="option-row" key={index}>
+        <label className="field option-field">
+          <span>Option {index + 1}</span>
+          <input
+            type="text"
+            maxLength="100"
+            required
+            value={option}
+            onChange={(event) => updateOption(index, event.target.value)}
+            placeholder={index === 0 ? "Yes" : index === 1 ? "No" : "Another choice"}
+          />
+        </label>
+        {options.length > 2 && <button className="remove-option" type="button" onClick={() => removeOption(index)}>Remove</button>}
+      </div>)}
+      {options.length < 20 && <button className="button secondary add-option" type="button" onClick={addOption}>+ Add option</button>}
+    </fieldset>
 
-      <div className="submission-note">
-        <strong>Before you submit</strong>
-        <span>ForeverVote may reject duplicate, loaded, abusive, promotional, or off-topic polls. Approved wording is locked once a poll goes live.</span>
-      </div>
+    <div className="submission-note">
+      <strong>Before you submit</strong>
+      <span>ForeverVote may reject duplicate, loaded, abusive, promotional, or off-topic polls. Approved wording is locked once a poll goes live.</span>
+    </div>
 
-      <button className="button primary submit-button" type="submit" disabled={submitting}>
-        {submitting ? "Submitting…" : "Submit for review"}
-      </button>
+    <button className="button primary submit-button" type="submit" disabled={submitting}>
+      {submitting ? "Submitting…" : "Submit for review"}
+    </button>
 
-      {message && <p className={submission ? "form-message success" : "form-message"} role="status">{message}</p>}
-      {submission && <p className="submission-id">Reference: {submission.slug}</p>}
-    </form>
-
-    {adminQueue.checked && adminQueue.allowed && <section className="moderation-panel" aria-labelledby="moderation-title">
-      <div className="form-heading">
-        <div>
-          <p className="kicker">Admin moderation</p>
-          <h2 id="moderation-title">Pending submissions</h2>
-        </div>
-        <span className="count-badge">{adminQueue.submissions.length} pending</span>
-      </div>
-
-      {adminQueue.submissions.length === 0
-        ? <p className="empty-queue">Nothing is waiting for review.</p>
-        : <div className="moderation-list">
-          {adminQueue.submissions.map((poll) => <article className="moderation-card" key={poll.id}>
-            <div className="card-top">
-              <span className="category">{poll.category}</span>
-              <span className="draft">{poll.creatorBattleTag} · {new Date(poll.createdAt).toLocaleDateString()}</span>
-            </div>
-            <h3>{poll.title}</h3>
-            {poll.rationale && <p className="context">{poll.rationale}</p>}
-            <div className="moderation-options">
-              {poll.options.map((option) => <span key={option.id}>{option.text}</span>)}
-            </div>
-            <div className="moderation-actions">
-              <button
-                className="button primary"
-                type="button"
-                disabled={Boolean(moderating)}
-                onClick={() => moderate(poll.id, "publish")}
-              >
-                {moderating === `${poll.id}:publish` ? "Publishing…" : "Approve & publish"}
-              </button>
-              <button
-                className="button secondary"
-                type="button"
-                disabled={Boolean(moderating)}
-                onClick={() => moderate(poll.id, "reject")}
-              >
-                {moderating === `${poll.id}:reject` ? "Rejecting…" : "Reject"}
-              </button>
-            </div>
-          </article>)}
-        </div>}
-    </section>}
-  </div>;
+    {message && <p className={submission ? "form-message success" : "form-message"} role="status">{message}</p>}
+    {submission && <p className="submission-id">Reference: {submission.slug}</p>}
+  </form>;
 }
