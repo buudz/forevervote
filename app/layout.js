@@ -1,4 +1,5 @@
 import "./globals.css";
+import "./visual-correction.css";
 
 export const metadata = {
   title: "ForeverVote — World of Warcraft: Forever Community Voting Hub",
