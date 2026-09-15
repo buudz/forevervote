@@ -197,7 +197,7 @@ export async function getPollShareData(slug) {
   }
 
   const rows = await supabaseRequest(
-    `/polls?select=id,slug,title,description,category,status,poll_options(text,position,is_neutral)&slug=eq.${encodeFilterValue(slug)}&status=eq.open&limit=1`
+    `/polls?select=id,slug,title,description,category,status,created_at,published_at,updated_at,poll_options(text,position,is_neutral)&slug=eq.${encodeFilterValue(slug)}&status=eq.open&limit=1`
   );
 
   const row = rows?.[0];
