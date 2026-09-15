@@ -6,7 +6,7 @@ export function SiteHeader() {
       <a className="brand" href="/" aria-label="ForeverVote home">
         <img
           className="brand-logo"
-          src="/fv-scroll-mark.svg"
+          src="/fv-scroll-mark-final.webp"
           width="58"
           height="58"
           alt=""

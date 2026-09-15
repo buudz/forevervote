@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "brand-assets": "node scripts/build-brand-assets.mjs",
+    "predev": "npm run brand-assets",
     "dev": "next dev",
+    "prebuild": "npm run brand-assets",
     "build": "next build",
     "start": "next start"
   },

@@ -4,7 +4,7 @@ export function SiteFooter() {
       <div className="footer-brand">
         <img
           className="footer-logo"
-          src="/fv-scroll-mark.svg"
+          src="/fv-scroll-mark-final.webp"
           width="38"
           height="38"
           alt=""
