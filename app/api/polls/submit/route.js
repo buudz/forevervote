@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { pollCategories } from "../../../data/polls";
 import { readSignedSession, SESSION_COOKIE } from "../../../lib/auth/session";
+import { isAdminSession } from "../../../lib/admin/access";
 import { submitPollDraft } from "../../../lib/supabase/polls";
 import { ensureUserFromSession } from "../../../lib/supabase/users";
 
@@ -197,6 +198,7 @@ export async function POST(request) {
 
   try {
     const user = await ensureUserFromSession(session);
+    const isAdmin = await isAdminSession(session);
     const submission = await submitPollDraft({
       creatorId: user.id,
       slug: slugify(validated.title),
@@ -204,7 +206,8 @@ export async function POST(request) {
       description: validated.description,
       category: validated.category,
       options: validated.options,
-      allowMultipleAnswers: validated.allowMultipleAnswers
+      allowMultipleAnswers: validated.allowMultipleAnswers,
+      bypassRateLimit: isAdmin
     });
 
     return json({
