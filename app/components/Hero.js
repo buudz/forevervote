@@ -13,8 +13,8 @@ export function Hero() {
           <a className="button secondary" href="#how-it-works">How ForeverVote works</a>
         </div>
         <div className="disclaimer-banner">
-          <strong>Independent fan project.</strong>
-          <span>ForeverVote is not affiliated with, sponsored by, or endorsed by Blizzard Entertainment.</span>
+          <strong>Battle.net login required.</strong>
+          <span>This helps keep votes authentic player votes instead of botted or spammed results.</span>
         </div>
       </div>
       <div className="hero-emblem">
