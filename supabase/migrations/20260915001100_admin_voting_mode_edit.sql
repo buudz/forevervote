@@ -1,0 +1,283 @@
+-- Let admins change a poll's single/multiple-answer mode through the audited
+-- admin editor. To protect voters, the mode can only change before the first
+-- vote has been cast. Every mode change is appended to poll_edit_history.
+
+alter table public.poll_edit_history
+  add column if not exists old_allow_multiple_answers boolean,
+  add column if not exists new_allow_multiple_answers boolean;
+
+create or replace function public.audit_poll_copy_edit()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  fields text[] := '{}'::text[];
+  editor_account text;
+  editor_tag text;
+begin
+  if new.title is not distinct from old.title
+     and new.description is not distinct from old.description
+     and new.allow_multiple_answers is not distinct from old.allow_multiple_answers then
+    return new;
+  end if;
+
+  if new.title is distinct from old.title then
+    fields := array_append(fields, 'title');
+  end if;
+
+  if new.description is distinct from old.description then
+    fields := array_append(fields, 'rationale');
+  end if;
+
+  if new.allow_multiple_answers is distinct from old.allow_multiple_answers then
+    fields := array_append(fields, 'voting_mode');
+  end if;
+
+  editor_account := nullif(current_setting('forevervote.editor_account_id', true), '');
+  editor_tag := coalesce(nullif(current_setting('forevervote.editor_battletag', true), ''), 'Admin');
+
+  insert into public.poll_edit_history (
+    poll_id,
+    poll_slug,
+    poll_creator_id,
+    editor_battlenet_account_id,
+    editor_battletag,
+    old_title,
+    new_title,
+    old_description,
+    new_description,
+    old_allow_multiple_answers,
+    new_allow_multiple_answers,
+    poll_status,
+    changed_fields
+  )
+  values (
+    old.id,
+    old.slug,
+    old.creator_id,
+    editor_account,
+    editor_tag,
+    old.title,
+    new.title,
+    coalesce(old.description, ''),
+    coalesce(new.description, ''),
+    old.allow_multiple_answers,
+    new.allow_multiple_answers,
+    new.status,
+    fields
+  );
+
+  return new;
+end;
+$$;
+
+drop trigger if exists audit_poll_copy_edit on public.polls;
+create trigger audit_poll_copy_edit
+after update of title, description, allow_multiple_answers on public.polls
+for each row
+when (
+  old.title is distinct from new.title
+  or old.description is distinct from new.description
+  or old.allow_multiple_answers is distinct from new.allow_multiple_answers
+)
+execute function public.audit_poll_copy_edit();
+
+create or replace function public.guard_poll() returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare
+  eligible boolean;
+  option_count integer;
+  audited_edit boolean;
+  audited_mode_edit boolean;
+begin
+  if TG_OP = 'UPDATE' then
+    if new.id is distinct from old.id or new.creator_id is distinct from old.creator_id then
+      raise exception 'Poll identity cannot be changed' using errcode = '23514';
+    end if;
+
+    if old.status <> 'draft' and new.slug is distinct from old.slug then
+      raise exception 'Posted poll slug cannot be changed' using errcode = '23514';
+    end if;
+
+    if new.title is distinct from old.title or new.description is distinct from old.description then
+      audited_edit := coalesce(current_setting('forevervote.admin_poll_edit', true), '') = '1';
+
+      if audited_edit is not true then
+        raise exception 'Poll title and rationale changes must use the audited admin edit function'
+          using errcode = '23514';
+      end if;
+    end if;
+
+    if new.allow_multiple_answers is distinct from old.allow_multiple_answers then
+      audited_mode_edit := coalesce(current_setting('forevervote.admin_poll_mode_edit', true), '') = '1';
+
+      if audited_mode_edit is not true then
+        raise exception 'Poll voting mode changes must use the audited admin edit function'
+          using errcode = '23514';
+      end if;
+    end if;
+
+    new.created_at := old.created_at;
+    new.published_at := old.published_at;
+  end if;
+
+  if new.status <> 'draft' then
+    if length(btrim(new.title)) not between 10 and 180 or new.title ~ '[<>]' then
+      raise exception 'Posted polls need a title between 10 and 180 characters without angle brackets'
+        using errcode = '23514';
+    end if;
+
+    if length(coalesce(new.description, '')) > 1500 or coalesce(new.description, '') ~ '[<>]' then
+      raise exception 'Poll context must be at most 1500 characters and cannot contain angle brackets'
+        using errcode = '23514';
+    end if;
+
+    if new.published_at is null then
+      new.published_at := now();
+    end if;
+  end if;
+
+  if TG_OP = 'INSERT'
+     or (new.status = 'open' and (TG_OP = 'INSERT' or old.status is distinct from 'open')) then
+    select wow_verified
+    into eligible
+    from public.users
+    where id = new.creator_id
+    for share;
+
+    if eligible is distinct from true then
+      raise exception 'Verified WoW profile required to create or publish polls'
+        using errcode = '23514';
+    end if;
+  end if;
+
+  if new.status = 'open' then
+    select count(*)
+    into option_count
+    from public.poll_options
+    where poll_id = new.id;
+
+    if option_count not between 2 and 20 then
+      raise exception 'Open polls need 2 to 20 options' using errcode = '23514';
+    end if;
+  end if;
+
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+create or replace function public.admin_edit_poll(
+  p_poll_id uuid,
+  p_title text,
+  p_description text,
+  p_allow_multiple_answers boolean,
+  p_editor_battlenet_account_id text,
+  p_editor_battletag text
+)
+returns table (
+  poll_id uuid,
+  poll_slug text,
+  poll_title text,
+  poll_description text,
+  poll_allow_multiple_answers boolean,
+  poll_status text,
+  poll_updated_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  current_poll public.polls%rowtype;
+  clean_title text;
+  clean_description text;
+  vote_count bigint;
+begin
+  clean_title := btrim(coalesce(p_title, ''));
+  clean_description := btrim(coalesce(p_description, ''));
+
+  if length(clean_title) not between 10 and 180 or clean_title ~ '[<>]' then
+    raise exception 'Invalid poll title' using errcode = '23514';
+  end if;
+
+  if length(clean_description) > 1500 or clean_description ~ '[<>]' then
+    raise exception 'Invalid poll rationale' using errcode = '23514';
+  end if;
+
+  select *
+  into current_poll
+  from public.polls
+  where id = p_poll_id
+  for update;
+
+  if not found then
+    raise exception 'Poll not found' using errcode = 'P0002';
+  end if;
+
+  if current_poll.status not in ('draft', 'open', 'hidden') then
+    raise exception 'Poll cannot be edited in its current state' using errcode = '23514';
+  end if;
+
+  if current_poll.allow_multiple_answers is distinct from coalesce(p_allow_multiple_answers, false) then
+    select count(*)
+    into vote_count
+    from public.votes
+    where poll_id = p_poll_id;
+
+    if vote_count > 0 then
+      raise exception 'Voting mode cannot be changed after votes have been cast'
+        using errcode = '23514';
+    end if;
+  end if;
+
+  if current_poll.title is not distinct from clean_title
+     and coalesce(current_poll.description, '') is not distinct from clean_description
+     and current_poll.allow_multiple_answers is not distinct from coalesce(p_allow_multiple_answers, false) then
+    return query
+    select
+      current_poll.id,
+      current_poll.slug,
+      current_poll.title,
+      coalesce(current_poll.description, ''),
+      current_poll.allow_multiple_answers,
+      current_poll.status,
+      current_poll.updated_at;
+    return;
+  end if;
+
+  perform set_config('forevervote.admin_poll_edit', '1', true);
+  perform set_config('forevervote.admin_poll_mode_edit', '1', true);
+  perform set_config('forevervote.editor_account_id', coalesce(p_editor_battlenet_account_id, ''), true);
+  perform set_config('forevervote.editor_battletag', coalesce(nullif(btrim(p_editor_battletag), ''), 'Admin'), true);
+
+  update public.polls
+  set
+    title = clean_title,
+    description = clean_description,
+    allow_multiple_answers = coalesce(p_allow_multiple_answers, false)
+  where id = p_poll_id
+  returning * into current_poll;
+
+  return query
+  select
+    current_poll.id,
+    current_poll.slug,
+    current_poll.title,
+    coalesce(current_poll.description, ''),
+    current_poll.allow_multiple_answers,
+    current_poll.status,
+    current_poll.updated_at;
+end;
+$$;
+
+revoke all on function public.admin_edit_poll(uuid,text,text,boolean,text,text) from public, anon, authenticated;
+grant execute on function public.admin_edit_poll(uuid,text,text,boolean,text,text) to service_role;
+
+comment on function public.admin_edit_poll(uuid,text,text,boolean,text,text) is
+  'Server-only audited admin editor for title, rationale, and voting mode. Voting mode changes are blocked after the first vote.';
