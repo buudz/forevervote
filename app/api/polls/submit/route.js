@@ -136,6 +136,10 @@ export async function POST(request) {
       }, 429);
     }
 
-    return json({ ok: false, error: "submission_failed" }, 500);
+    return json({
+      ok: false,
+      error: "submission_failed",
+      message: "Could not submit the poll right now. Please try again in a moment."
+    }, 500);
   }
 }

@@ -397,7 +397,7 @@ export async function retractVote({ pollSlug, optionId, userId }) {
 }
 
 export async function submitPollDraft({ creatorId, slug, title, description, category, options, allowMultipleAnswers = false }) {
-  const rows = await supabaseRequest("/rpc/submit_poll", {
+  const rows = await supabaseRequest("/rpc/submit_poll_v2", {
     method: "POST",
     body: JSON.stringify({
       p_creator_id: creatorId,
