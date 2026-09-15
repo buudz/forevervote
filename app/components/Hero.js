@@ -18,7 +18,7 @@ export function Hero() {
         </div>
       </div>
       <div className="hero-emblem">
-        <EmblemImage className="hero-logo" priority alt="ForeverVote — Community Voting Hub" />
+        <EmblemImage className="hero-logo" priority alt="ForeverVote — WoW Community Voting Hub" />
       </div>
     </div>
   </section>;
