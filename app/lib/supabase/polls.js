@@ -169,6 +169,28 @@ export async function getOpenPollBySlug(slug) {
   return rows?.[0] || null;
 }
 
+
+
+export async function getOpenPollSeoData() {
+  if (!isSupabaseConfigured()) {
+    return [];
+  }
+
+  const rows = await supabaseRequest(
+    "/polls?select=slug,title,description,category,created_at,published_at,updated_at&status=eq.open&order=updated_at.desc"
+  );
+
+  return (rows || []).map((row) => ({
+    slug: row.slug,
+    title: row.title,
+    rationale: row.description,
+    category: row.category,
+    createdAt: row.created_at,
+    publishedAt: row.published_at,
+    updatedAt: row.updated_at
+  }));
+}
+
 export async function getPollShareData(slug) {
   if (!isSupabaseConfigured()) {
     return null;
@@ -189,6 +211,9 @@ export async function getPollShareData(slug) {
     title: row.title,
     rationale: row.description,
     category: row.category,
+    createdAt: row.created_at,
+    publishedAt: row.published_at,
+    updatedAt: row.updated_at,
     options: (row.poll_options || [])
       .sort(sortByPosition)
       .map((option) => ({

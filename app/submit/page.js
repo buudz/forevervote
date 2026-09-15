@@ -1,10 +1,39 @@
 import { SiteFooter } from "../components/SiteFooter";
 import { SiteHeader } from "../components/SiteHeader";
 import { SubmitPollForm } from "../components/SubmitPollForm";
+import { SITE_NAME } from "../lib/seo";
+
+const title = "Submit a WoW Forever Community Poll";
+const description = "Verified WoW players can submit a World of Warcraft: Forever poll for review on ForeverVote, an independent fan-run community voting hub.";
 
 export const metadata = {
-  title: "Submit a Poll · ForeverVote",
-  description: "Submit a World of Warcraft: Forever community poll for review on ForeverVote."
+  title,
+  description,
+  alternates: {
+    canonical: "/submit"
+  },
+  openGraph: {
+    type: "website",
+    siteName: SITE_NAME,
+    locale: "en_US",
+    title: `${title} | ${SITE_NAME}`,
+    description,
+    url: "/submit",
+    images: [
+      {
+        url: "/api/share/home",
+        width: 1200,
+        height: 630,
+        alt: "ForeverVote — World of Warcraft: Forever Community Voting Hub"
+      }
+    ]
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${title} | ${SITE_NAME}`,
+    description,
+    images: ["/api/share/home"]
+  }
 };
 
 export default function SubmitPollPage() {

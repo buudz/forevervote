@@ -2,10 +2,15 @@ import { notFound } from "next/navigation";
 import { SiteFooter } from "../../components/SiteFooter";
 import { SiteHeader } from "../../components/SiteHeader";
 import { getPollShareData, getPublicPollEditHistory } from "../../lib/supabase/polls";
+import {
+  SITE_NAME,
+  SITE_URL,
+  absoluteUrl,
+  buildPollMetaDescription,
+  jsonLd
+} from "../../lib/seo";
 
 export const dynamic = "force-dynamic";
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.forevervote.com";
 
 function formatDate(value) {
   return new Intl.DateTimeFormat("en", {
@@ -27,28 +32,37 @@ export async function generateMetadata({ params }) {
 
   if (!poll) {
     return {
-      title: "Poll not found · ForeverVote"
+      title: "Poll not found",
+      robots: {
+        index: false,
+        follow: false
+      }
     };
   }
 
-  const pollUrl = `${SITE_URL}/polls/${poll.slug}`;
-  const imageUrl = `${SITE_URL}/api/share/poll/${poll.slug}.png?v=5`;
-  const description = poll.rationale || "Vote on this ForeverVote community poll.";
+  const pollPath = `/polls/${poll.slug}`;
+  const pollUrl = absoluteUrl(pollPath);
+  const imageUrl = absoluteUrl(`/api/share/poll/${poll.slug}.png?v=6`);
+  const description = buildPollMetaDescription(poll);
 
   return {
-    title: `${poll.title} · ForeverVote`,
+    title: `${poll.title} — WoW Forever Poll`,
     description,
+    alternates: {
+      canonical: pollPath
+    },
     openGraph: {
-      title: poll.title,
+      title: `${poll.title} | ${SITE_NAME}`,
       description,
       url: pollUrl,
-      siteName: "ForeverVote",
+      siteName: SITE_NAME,
+      locale: "en_US",
       images: [{ url: imageUrl, width: 1200, height: 630, alt: poll.title, type: "image/png" }],
-      type: "article"
+      type: "website"
     },
     twitter: {
       card: "summary_large_image",
-      title: poll.title,
+      title: `${poll.title} | ${SITE_NAME}`,
       description,
       images: [imageUrl]
     }
@@ -64,17 +78,68 @@ export default async function PollSharePage({ params }) {
   }
 
   const editHistory = await getPublicPollEditHistory(slug).catch(() => []);
+  const pollUrl = absoluteUrl(`/polls/${poll.slug}`);
+  const description = buildPollMetaDescription(poll);
+
+  const pollStructuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        "@id": `${pollUrl}#webpage`,
+        url: pollUrl,
+        name: poll.title,
+        description,
+        isPartOf: {
+          "@id": `${SITE_URL}/#website`
+        },
+        about: {
+          "@type": "Thing",
+          name: "World of Warcraft: Forever"
+        },
+        breadcrumb: {
+          "@id": `${pollUrl}#breadcrumb`
+        },
+        ...(poll.publishedAt ? { datePublished: poll.publishedAt } : {}),
+        ...(poll.updatedAt ? { dateModified: poll.updatedAt } : {})
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": `${pollUrl}#breadcrumb`,
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: SITE_NAME,
+            item: `${SITE_URL}/`
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: poll.title,
+            item: pollUrl
+          }
+        ]
+      }
+    ]
+  };
 
   return <>
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: jsonLd(pollStructuredData) }}
+    />
     <SiteHeader />
     <main id="main">
       <section className="polls-section" aria-labelledby="shared-poll-title">
         <div className="wrap">
           <div className="section-heading">
             <div>
-              <p className="kicker">Shared poll · {poll.category}</p>
+              <p className="kicker">WoW Forever community poll · {poll.category}</p>
               <h1 id="shared-poll-title">{poll.title}</h1>
-              {poll.rationale && <p>{poll.rationale}</p>}
+              {poll.rationale
+                ? <p>{poll.rationale}</p>
+                : <p>Vote in this independent World of Warcraft: Forever community poll and compare the public response.</p>}
             </div>
             <span className="count-badge">{poll.options.length} options</span>
           </div>

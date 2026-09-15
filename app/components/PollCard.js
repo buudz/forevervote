@@ -22,7 +22,7 @@ export function PollCard({ poll, canVote, authReady, databaseReady, onShare, onV
       <span className="category">{poll.category}</span>
       <span className="draft">{databaseReady ? `${poll.totalVotes || 0} votes` : "Voting soon"}</span>
     </div>
-    <h3>{poll.title}</h3>
+    <h3><a className="poll-title-link" href={`/polls/${poll.slug || poll.id}`}>{poll.title}</a></h3>
     {context && <p className="context">{context}</p>}
     <div className="option-preview" aria-label="Poll options">
       {poll.options.map((option) => {
