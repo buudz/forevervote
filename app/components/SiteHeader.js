@@ -1,17 +1,15 @@
 import { AuthStatus } from "./AuthStatus";
+import { BrandScrollMark } from "./BrandScrollMark";
 
 export function SiteHeader() {
   return <header className="site-header">
     <div className="wrap header-inner">
       <a className="brand" href="/" aria-label="ForeverVote home">
-        <img
+        <BrandScrollMark
           className="brand-logo"
-          src="/fv-scroll-mark-final.webp"
-          width="58"
-          height="58"
-          alt=""
-          aria-hidden="true"
-          style={{ width: 58, height: 58, objectFit: "contain", flex: "0 0 auto" }}
+          size={58}
+          title=""
+          style={{ flex: "0 0 auto" }}
         />
         <span className="brand-copy">
           <strong>ForeverVote</strong>
