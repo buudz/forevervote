@@ -56,9 +56,6 @@ function OptionChip({ label, index }) {
 }
 
 export async function GET(_request, context) {
-  const brandMark = await fetch(
-    new URL("../../../../../public/fv-scroll-mark-final.webp", import.meta.url)
-  ).then((response) => response.arrayBuffer());
   const { slug: rawSlug } = await context.params;
   const slug = String(rawSlug || "").replace(/\.png$/i, "");
   const poll = await getPollShareData(slug).catch(() => null);
@@ -159,7 +156,7 @@ export async function GET(_request, context) {
         background: "radial-gradient(circle at 50% 48%, rgba(47,149,200,.10), rgba(4,16,26,0) 70%)"
       }}>
         <img
-          src={brandMark}
+          src="https://www.forevervote.com/fv-scroll-mark-final.webp"
           width="104"
           height="104"
           alt=""
