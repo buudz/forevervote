@@ -5,6 +5,36 @@ function sortByPosition(left, right) {
   return Number(left.position || 0) - Number(right.position || 0);
 }
 
+function buildReputationProgress(row = {}) {
+  const totalPoints = Number(row.total_points || 0);
+  const tiers = [
+    { rank: "Neutral", floor: 0, ceiling: 3000 },
+    { rank: "Friendly", floor: 3000, ceiling: 9000 },
+    { rank: "Honored", floor: 9000, ceiling: 21000 },
+    { rank: "Revered", floor: 21000, ceiling: 42000 },
+    { rank: "Exalted", floor: 42000, ceiling: 42999 }
+  ];
+
+  const tier = [...tiers].reverse().find((item) => totalPoints >= item.floor) || tiers[0];
+  const rankMax = tier.rank === "Exalted" ? 999 : tier.ceiling - tier.floor;
+  const rankPoints = Math.min(Math.max(totalPoints - tier.floor, 0), rankMax);
+  const progressPercent = rankMax > 0 ? Math.min(100, Math.round((rankPoints / rankMax) * 1000) / 10) : 100;
+  const tierIndex = tiers.findIndex((item) => item.rank === tier.rank);
+
+  return {
+    rank: tier.rank,
+    totalPoints,
+    rankPoints,
+    rankMax,
+    progressPercent,
+    nextRank: tier.rank === "Exalted" ? null : tiers[tierIndex + 1]?.rank || null,
+    votePoints: Number(row.vote_points || 0),
+    creatorPoints: Number(row.creator_points || 0),
+    pollsVoted: Number(row.polls_voted || 0),
+    uniqueVotersReceived: Number(row.unique_voters_received || 0)
+  };
+}
+
 function buildProfilePoll(row, selectedOptionIds = []) {
   const votes = Array.isArray(row.votes) ? row.votes : [];
   const voterCount = new Set(votes.map((vote) => vote.user_id).filter(Boolean)).size;
@@ -49,21 +79,29 @@ export async function getUserProfileDashboard(session) {
     return {
       submitted: [],
       approved: [],
-      voted: []
+      voted: [],
+      reputation: buildReputationProgress()
     };
   }
 
-  const ownRows = await supabaseRequest(
-    `/polls?select=id,slug,title,description,category,status,created_at,published_at,updated_at,trash_reason,allow_multiple_answers,poll_options(id,text,position,is_neutral),votes(user_id)&creator_id=eq.${encodeFilterValue(user.id)}&order=created_at.desc`
-  );
+  const [ownRows, voteRows, reputationRows] = await Promise.all([
+    supabaseRequest(
+      `/polls?select=id,slug,title,description,category,status,created_at,published_at,updated_at,trash_reason,allow_multiple_answers,poll_options(id,text,position,is_neutral),votes(user_id)&creator_id=eq.${encodeFilterValue(user.id)}&order=created_at.desc`
+    ),
+    supabaseRequest(
+      `/votes?select=poll_id,option_id&user_id=eq.${encodeFilterValue(user.id)}`
+    ),
+    supabaseRequest("/rpc/user_reputation_summary", {
+      method: "POST",
+      body: JSON.stringify({ p_user_id: user.id })
+    })
+  ]);
 
   const ownPolls = (ownRows || []).map((row) => buildProfilePoll(row));
   const submitted = ownPolls.filter((poll) => poll.status !== "open");
   const approved = ownPolls.filter((poll) => poll.status === "open");
+  const reputation = buildReputationProgress(reputationRows?.[0] || {});
 
-  const voteRows = await supabaseRequest(
-    `/votes?select=poll_id,option_id&user_id=eq.${encodeFilterValue(user.id)}`
-  );
   const selectedByPoll = new Map();
 
   for (const vote of voteRows || []) {
@@ -83,7 +121,7 @@ export async function getUserProfileDashboard(session) {
     voted = (pollRows || []).map((row) => buildProfilePoll(row, selectedByPoll.get(row.id) || []));
   }
 
-  return { submitted, approved, voted };
+  return { submitted, approved, voted, reputation };
 }
 
 export async function editOwnPoll({
