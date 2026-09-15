@@ -293,7 +293,9 @@ function buildHistoryEntry(row, includeEditor = false) {
     newTitle: row.new_title,
     oldRationale: row.old_description || "",
     newRationale: row.new_description || "",
-    pollStatus: row.poll_status
+    pollStatus: row.poll_status,
+    oldAllowMultipleAnswers: typeof row.old_allow_multiple_answers === "boolean" ? row.old_allow_multiple_answers : null,
+    newAllowMultipleAnswers: typeof row.new_allow_multiple_answers === "boolean" ? row.new_allow_multiple_answers : null
   };
 
   if (includeEditor) {
@@ -315,7 +317,7 @@ export async function getPublicPollEditHistory(slug) {
   }
 
   const rows = await supabaseRequest(
-    `/poll_edit_history?select=id,edited_at,changed_fields,old_title,new_title,old_description,new_description,poll_status&poll_id=eq.${encodeFilterValue(poll.id)}&order=edited_at.desc`
+    `/poll_edit_history?select=id,edited_at,changed_fields,old_title,new_title,old_description,new_description,old_allow_multiple_answers,new_allow_multiple_answers,poll_status&poll_id=eq.${encodeFilterValue(poll.id)}&order=edited_at.desc`
   );
 
   return (rows || []).map((row) => buildHistoryEntry(row, false));
@@ -323,25 +325,27 @@ export async function getPublicPollEditHistory(slug) {
 
 export async function getAdminPollEditHistory(pollId) {
   const rows = await supabaseRequest(
-    `/poll_edit_history?select=id,edited_at,changed_fields,old_title,new_title,old_description,new_description,poll_status,editor_battlenet_account_id,editor_battletag&poll_id=eq.${encodeFilterValue(pollId)}&order=edited_at.desc`
+    `/poll_edit_history?select=id,edited_at,changed_fields,old_title,new_title,old_description,new_description,old_allow_multiple_answers,new_allow_multiple_answers,poll_status,editor_battlenet_account_id,editor_battletag&poll_id=eq.${encodeFilterValue(pollId)}&order=edited_at.desc`
   );
 
   return (rows || []).map((row) => buildHistoryEntry(row, true));
 }
 
-export async function editPollAdminCopy({
+export async function editPollAdmin({
   pollId,
   title,
   rationale,
+  allowMultipleAnswers,
   editorBattleNetAccountId,
   editorBattleTag
 }) {
-  const rows = await supabaseRequest("/rpc/admin_edit_poll_copy", {
+  const rows = await supabaseRequest("/rpc/admin_edit_poll", {
     method: "POST",
     body: JSON.stringify({
       p_poll_id: pollId,
       p_title: title,
       p_description: rationale,
+      p_allow_multiple_answers: Boolean(allowMultipleAnswers),
       p_editor_battlenet_account_id: editorBattleNetAccountId || null,
       p_editor_battletag: editorBattleTag || "Admin"
     })
