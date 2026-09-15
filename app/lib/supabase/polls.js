@@ -295,7 +295,12 @@ function buildHistoryEntry(row, includeEditor = false) {
     newRationale: row.new_description || "",
     pollStatus: row.poll_status,
     oldAllowMultipleAnswers: typeof row.old_allow_multiple_answers === "boolean" ? row.old_allow_multiple_answers : null,
-    newAllowMultipleAnswers: typeof row.new_allow_multiple_answers === "boolean" ? row.new_allow_multiple_answers : null
+    newAllowMultipleAnswers: typeof row.new_allow_multiple_answers === "boolean" ? row.new_allow_multiple_answers : null,
+    editorRole: row.editor_role || "admin",
+    oldCategory: row.old_category || null,
+    newCategory: row.new_category || null,
+    oldOptions: Array.isArray(row.old_options) ? row.old_options : [],
+    newOptions: Array.isArray(row.new_options) ? row.new_options : []
   };
 
   if (includeEditor) {
@@ -317,7 +322,7 @@ export async function getPublicPollEditHistory(slug) {
   }
 
   const rows = await supabaseRequest(
-    `/poll_edit_history?select=id,edited_at,changed_fields,old_title,new_title,old_description,new_description,old_allow_multiple_answers,new_allow_multiple_answers,poll_status&poll_id=eq.${encodeFilterValue(poll.id)}&order=edited_at.desc`
+    `/poll_edit_history?select=id,edited_at,changed_fields,old_title,new_title,old_description,new_description,old_allow_multiple_answers,new_allow_multiple_answers,editor_role,old_category,new_category,old_options,new_options,poll_status&poll_id=eq.${encodeFilterValue(poll.id)}&order=edited_at.desc`
   );
 
   return (rows || []).map((row) => buildHistoryEntry(row, false));
@@ -325,7 +330,7 @@ export async function getPublicPollEditHistory(slug) {
 
 export async function getAdminPollEditHistory(pollId) {
   const rows = await supabaseRequest(
-    `/poll_edit_history?select=id,edited_at,changed_fields,old_title,new_title,old_description,new_description,old_allow_multiple_answers,new_allow_multiple_answers,poll_status,editor_battlenet_account_id,editor_battletag&poll_id=eq.${encodeFilterValue(pollId)}&order=edited_at.desc`
+    `/poll_edit_history?select=id,edited_at,changed_fields,old_title,new_title,old_description,new_description,old_allow_multiple_answers,new_allow_multiple_answers,editor_role,old_category,new_category,old_options,new_options,poll_status,editor_battlenet_account_id,editor_battletag&poll_id=eq.${encodeFilterValue(pollId)}&order=edited_at.desc`
   );
 
   return (rows || []).map((row) => buildHistoryEntry(row, true));
