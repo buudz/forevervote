@@ -80,7 +80,7 @@ const shareActionStyle = {
 function buildSharePayload(poll) {
   const slug = poll.slug || poll.id;
   const pollUrl = new URL(`/polls/${slug}`, window.location.origin).toString();
-  const imageUrl = new URL(`/api/share/poll/${slug}?v=3`, window.location.origin).toString();
+  const imageUrl = new URL(`/api/share/poll/${slug}?v=8`, window.location.origin).toString();
   const text = `${poll.title}\n\nVote on ForeverVote:\n${pollUrl}`;
 
   return { title: poll.title, pollUrl, imageUrl, text };
