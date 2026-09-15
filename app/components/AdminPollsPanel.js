@@ -72,7 +72,7 @@ function HistoryList({ history, adminView = true }) {
   if (!history.length) {
     return <div className="admin-empty compact">
       <strong>No edits recorded.</strong>
-      <span>This poll has never had its title, rationale, or voting mode changed.</span>
+      <span>This poll has no recorded title, rationale, category, option, or voting-mode changes.</span>
     </div>;
   }
 
@@ -81,7 +81,7 @@ function HistoryList({ history, adminView = true }) {
       <div className="admin-edit-history-meta">
         <strong>{formatDate(entry.editedAt, true)}</strong>
         <span>{(entry.changedFields || []).join(" + ") || "poll copy"}</span>
-        {adminView && <span>{entry.editorBattleTag || "Admin"}</span>}
+        {adminView && <span>{entry.editorRole === "creator" ? "Creator" : "Admin"} · {entry.editorBattleTag || "Unknown"}</span>}
       </div>
 
       {entry.changedFields?.includes("title") && <div className="admin-edit-diff">
@@ -100,6 +100,18 @@ function HistoryList({ history, adminView = true }) {
         <small>Voting mode</small>
         <div><span>Before</span><p>{entry.oldAllowMultipleAnswers ? "Multiple answers" : "Single answer"}</p></div>
         <div><span>After</span><p>{entry.newAllowMultipleAnswers ? "Multiple answers" : "Single answer"}</p></div>
+      </div>}
+
+      {entry.changedFields?.includes("category") && <div className="admin-edit-diff">
+        <small>Category</small>
+        <div><span>Before</span><p>{entry.oldCategory || "—"}</p></div>
+        <div><span>After</span><p>{entry.newCategory || "—"}</p></div>
+      </div>}
+
+      {entry.changedFields?.includes("options") && <div className="admin-edit-diff">
+        <small>Options</small>
+        <div><span>Before</span><p>{(entry.oldOptions || []).map((option) => option.text).join(" · ") || "—"}</p></div>
+        <div><span>After</span><p>{(entry.newOptions || []).map((option) => option.text).join(" · ") || "—"}</p></div>
       </div>}
     </article>)}
   </div>;
@@ -222,12 +234,12 @@ function PollAdminCard({ poll, actions, busy, onAction, onEdit, trashLabel = "" 
         <input
           type="text"
           minLength={10}
-          maxLength={180}
+          maxLength={90}
           required
           value={title}
           onChange={(event) => setTitle(event.target.value)}
         />
-        <small>{title.length}/180</small>
+        <small>{title.length}/90</small>
       </label>
 
       <label>
@@ -454,7 +466,7 @@ export function AdminPollsPanel() {
       if (!response.ok || !data.ok) {
         throw new Error(
           data.error === "invalid_title"
-            ? "Title must be 10–180 characters and cannot contain angle brackets."
+            ? "Title must be 10–90 characters and cannot contain angle brackets."
             : data.error === "invalid_rationale"
               ? "Rationale must be 1500 characters or less and cannot contain angle brackets."
               : data.error === "voting_mode_locked"
