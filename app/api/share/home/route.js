@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { BrandScrollMark } from "../../../components/BrandScrollMark";
 
 export const runtime = "edge";
 
@@ -80,20 +81,18 @@ export async function GET() {
         }}>Verified community polls, public results, and player discussion.</div>
       </div>
 
-      <img
-        src="https://www.forevervote.com/fv-scroll-mark-final.webp"
-        width="220"
-        height="220"
-        alt=""
-        style={{
-          position: "absolute",
-          right: 86,
-          top: 178,
-          width: 220,
-          height: 220,
-          objectFit: "contain"
-        }}
-      />
+      <div style={{
+        position: "absolute",
+        right: 86,
+        top: 178,
+        width: 220,
+        height: 220,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center"
+      }}>
+        <BrandScrollMark size={220} title="" />
+      </div>
 
       <div style={{
         position: "absolute",
