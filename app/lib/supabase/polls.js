@@ -62,7 +62,7 @@ function filterPollsByVoteState(polls, voteFilter) {
   return polls;
 }
 
-function buildPoll(row, userVotesByPollId = new Map()) {
+function buildPoll(row, userVotesByPollId = new Map(), editCountsByPollId = new Map()) {
   const votes = Array.isArray(row.votes) ? row.votes : [];
   const options = (Array.isArray(row.poll_options) ? row.poll_options : [])
     .sort(sortByPosition)
@@ -93,8 +93,27 @@ function buildPoll(row, userVotesByPollId = new Map()) {
     allowCustomAnswers: Boolean(row.allow_custom_answers),
     options,
     totalVotes,
+    editCount: editCountsByPollId.get(row.id) || 0,
     userVoteOptionId: userVotesByPollId.get(row.id) || null
   };
+}
+
+async function getEditCountsByPollIds(pollIds) {
+  const counts = new Map();
+
+  if (!pollIds.length) {
+    return counts;
+  }
+
+  const rows = await supabaseRequest(
+    `/poll_edit_history?select=poll_id&poll_id=in.(${pollIds.join(",")})`
+  );
+
+  for (const row of rows || []) {
+    counts.set(row.poll_id, (counts.get(row.poll_id) || 0) + 1);
+  }
+
+  return counts;
 }
 
 export async function getOpenPollsForSession(session, options = {}) {
@@ -117,6 +136,9 @@ export async function getOpenPollsForSession(session, options = {}) {
   );
 
   const pollIds = rows.map((row) => row.id).filter(Boolean);
+  const [editCountsByPollId] = await Promise.all([
+    getEditCountsByPollIds(pollIds)
+  ]);
   const userVotesByPollId = new Map();
   const battlenetAccountId = session?.user?.battlenetAccountId;
 
@@ -132,7 +154,7 @@ export async function getOpenPollsForSession(session, options = {}) {
     }
   }
 
-  const polls = rows.map((row) => buildPoll(row, userVotesByPollId));
+  const polls = rows.map((row) => buildPoll(row, userVotesByPollId, editCountsByPollId));
   const sortedPolls = sortPolls(polls, sort);
 
   return {
@@ -168,6 +190,7 @@ export async function getPollShareData(slug) {
   }
 
   return {
+    id: row.id,
     slug: row.slug,
     title: row.title,
     rationale: row.description,
@@ -180,6 +203,72 @@ export async function getPollShareData(slug) {
         isNeutral: Boolean(option.is_neutral)
       }))
   };
+}
+
+function buildHistoryEntry(row, includeEditor = false) {
+  const entry = {
+    id: row.id,
+    editedAt: row.edited_at,
+    changedFields: row.changed_fields || [],
+    oldTitle: row.old_title,
+    newTitle: row.new_title,
+    oldRationale: row.old_description || "",
+    newRationale: row.new_description || "",
+    pollStatus: row.poll_status
+  };
+
+  if (includeEditor) {
+    entry.editorBattleTag = row.editor_battletag || "Admin";
+    entry.editorBattleNetAccountId = row.editor_battlenet_account_id || null;
+  }
+
+  return entry;
+}
+
+export async function getPublicPollEditHistory(slug) {
+  if (!isSupabaseConfigured()) {
+    return [];
+  }
+
+  const poll = await getOpenPollBySlug(slug);
+  if (!poll?.id) {
+    return [];
+  }
+
+  const rows = await supabaseRequest(
+    `/poll_edit_history?select=id,edited_at,changed_fields,old_title,new_title,old_description,new_description,poll_status&poll_id=eq.${encodeFilterValue(poll.id)}&order=edited_at.desc`
+  );
+
+  return (rows || []).map((row) => buildHistoryEntry(row, false));
+}
+
+export async function getAdminPollEditHistory(pollId) {
+  const rows = await supabaseRequest(
+    `/poll_edit_history?select=id,edited_at,changed_fields,old_title,new_title,old_description,new_description,poll_status,editor_battlenet_account_id,editor_battletag&poll_id=eq.${encodeFilterValue(pollId)}&order=edited_at.desc`
+  );
+
+  return (rows || []).map((row) => buildHistoryEntry(row, true));
+}
+
+export async function editPollAdminCopy({
+  pollId,
+  title,
+  rationale,
+  editorBattleNetAccountId,
+  editorBattleTag
+}) {
+  const rows = await supabaseRequest("/rpc/admin_edit_poll_copy", {
+    method: "POST",
+    body: JSON.stringify({
+      p_poll_id: pollId,
+      p_title: title,
+      p_description: rationale,
+      p_editor_battlenet_account_id: editorBattleNetAccountId || null,
+      p_editor_battletag: editorBattleTag || "Admin"
+    })
+  });
+
+  return rows?.[0] || null;
 }
 
 export async function castVote({ pollSlug, optionId, userId }) {
