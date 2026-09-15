@@ -1,9 +1,13 @@
 import { ImageResponse } from "next/og";
+import fs from "node:fs";
+import path from "node:path";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 
 export async function GET() {
+  const lockedLogoPath = path.join(process.cwd(), "public", "fv-scroll-mark-final.png");
+  const lockedLogoSrc = `data:image/png;base64,${fs.readFileSync(lockedLogoPath).toString("base64")}`;
   return new ImageResponse(
     <div style={{
       width: 1200,
@@ -81,7 +85,7 @@ export async function GET() {
       </div>
 
       <img
-        src="https://www.forevervote.com/fv-scroll-mark-final.webp?v=locked-20260915"
+        src={lockedLogoSrc}
         width="220"
         height="220"
         alt=""
