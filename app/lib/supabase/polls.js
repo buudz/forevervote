@@ -98,19 +98,15 @@ function buildPoll(row, userVotesByPollId = new Map(), editCountsByPollId = new 
   };
 }
 
-async function getEditCountsByPollIds(pollIds) {
+async function getOpenPollEditCounts() {
   const counts = new Map();
-
-  if (!pollIds.length) {
-    return counts;
-  }
-
-  const rows = await supabaseRequest(
-    `/poll_edit_history?select=poll_id&poll_id=in.(${pollIds.join(",")})`
-  );
+  const rows = await supabaseRequest("/rpc/open_poll_edit_counts", {
+    method: "POST",
+    body: JSON.stringify({})
+  });
 
   for (const row of rows || []) {
-    counts.set(row.poll_id, (counts.get(row.poll_id) || 0) + 1);
+    counts.set(row.poll_id, Number(row.edit_count || 0));
   }
 
   return counts;
@@ -136,9 +132,7 @@ export async function getOpenPollsForSession(session, options = {}) {
   );
 
   const pollIds = rows.map((row) => row.id).filter(Boolean);
-  const [editCountsByPollId] = await Promise.all([
-    getEditCountsByPollIds(pollIds)
-  ]);
+  const editCountsByPollId = await getOpenPollEditCounts();
   const userVotesByPollId = new Map();
   const battlenetAccountId = session?.user?.battlenetAccountId;
 
