@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { authorizeAdminRequest } from "../../../lib/admin/access";
 import { readSignedSession, SESSION_COOKIE } from "../../../lib/auth/session";
-import { getPendingPollSubmissions, moderatePollSubmission } from "../../../lib/supabase/polls";
+import { getAdminPollQueues, updatePollAdminState } from "../../../lib/supabase/polls";
 
 function json(body, status = 200) {
   return NextResponse.json(body, {
@@ -28,11 +28,11 @@ export async function GET(request) {
   }
 
   try {
-    const submissions = await getPendingPollSubmissions();
-    return json({ ok: true, submissions });
+    const queues = await getAdminPollQueues();
+    return json({ ok: true, ...queues });
   } catch (error) {
-    console.error("Failed to load poll submissions", error.message);
-    return json({ ok: false, error: "submissions_unavailable" }, 503);
+    console.error("Failed to load admin poll queues", error.message);
+    return json({ ok: false, error: "admin_polls_unavailable" }, 503);
   }
 }
 
@@ -49,19 +49,26 @@ export async function POST(request) {
   const body = await request.json().catch(() => null);
   const pollId = typeof body?.pollId === "string" ? body.pollId : "";
   const action = body?.action;
+  const allowedActions = ["publish", "reject", "unpublish", "restore"];
 
-  if (!pollId || !["publish", "reject"].includes(action)) {
+  if (!pollId || !allowedActions.includes(action)) {
     return json({ ok: false, error: "invalid_request" }, 400);
   }
 
   try {
-    const poll = await moderatePollSubmission({ pollId, action });
+    const poll = await updatePollAdminState({ pollId, action });
     return json({ ok: true, poll });
   } catch (error) {
-    console.error("Poll moderation failed", error.message);
+    console.error("Poll admin action failed", error.message);
     return json({
       ok: false,
-      error: error.status === 404 ? "submission_not_found" : "moderation_failed"
+      error: error.status === 404
+        ? "poll_not_found"
+        : error.status === 410
+          ? "trash_expired"
+          : error.status === 409
+            ? "poll_state_conflict"
+            : "admin_action_failed"
     }, error.status || 500);
   }
 }

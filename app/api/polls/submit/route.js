@@ -55,8 +55,8 @@ function validateSubmission(body) {
     return { error: "Choose a valid poll category." };
   }
 
-  if (options.length < 2 || options.length > 5) {
-    return { error: "Polls need between 2 and 5 options." };
+  if (options.length < 2 || options.length > 20) {
+    return { error: "Polls need between 2 and 20 options." };
   }
 
   if (options.some((option) => option.length < 1 || option.length > 100 || /[<>]/.test(option))) {

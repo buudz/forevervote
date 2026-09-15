@@ -16,7 +16,7 @@ export default function AdminPage() {
           <div className="admin-intro">
             <p className="kicker">ForeverVote administration</p>
             <h1 id="admin-title">Poll moderation.</h1>
-            <p>Review community submissions before they appear on the public voting board.</p>
+            <p>Review submissions, manage live polls, and restore recently removed polls from the recycle bin.</p>
           </div>
           <AdminPollsPanel />
         </div>

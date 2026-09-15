@@ -62,7 +62,7 @@ export function SubmitPollForm() {
   }
 
   function addOption() {
-    setOptions((current) => current.length < 5 ? [...current, ""] : current);
+    setOptions((current) => current.length < 20 ? [...current, ""] : current);
   }
 
   function removeOption(index) {
@@ -206,7 +206,7 @@ export function SubmitPollForm() {
 
       <fieldset className="option-editor">
         <legend>Poll options</legend>
-        <p>Use 2–5 distinct answers.</p>
+        <p>Use 2–20 distinct answers.</p>
         {options.map((option, index) => <div className="option-row" key={index}>
           <label className="field option-field">
             <span>Option {index + 1}</span>
@@ -221,7 +221,7 @@ export function SubmitPollForm() {
           </label>
           {options.length > 2 && <button className="remove-option" type="button" onClick={() => removeOption(index)}>Remove</button>}
         </div>)}
-        {options.length < 5 && <button className="button secondary add-option" type="button" onClick={addOption}>+ Add option</button>}
+        {options.length < 20 && <button className="button secondary add-option" type="button" onClick={addOption}>+ Add option</button>}
       </fieldset>
 
       <div className="submission-note">
