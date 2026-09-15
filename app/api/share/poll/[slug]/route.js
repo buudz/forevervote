@@ -1,8 +1,10 @@
 import { ImageResponse } from "next/og";
+import fs from "node:fs";
+import path from "node:path";
 import { getPollShareData } from "../../../../lib/supabase/polls";
 
 export const dynamic = "force-dynamic";
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 const SITE_URL = "www.forevervote.com";
 
@@ -56,6 +58,8 @@ function OptionChip({ label, index }) {
 }
 
 export async function GET(_request, context) {
+  const lockedLogoPath = path.join(process.cwd(), "public", "fv-scroll-mark-final.png");
+  const lockedLogoSrc = `data:image/png;base64,${fs.readFileSync(lockedLogoPath).toString("base64")}`;
   const { slug: rawSlug } = await context.params;
   const slug = String(rawSlug || "").replace(/\.png$/i, "");
   const poll = await getPollShareData(slug).catch(() => null);
@@ -156,7 +160,7 @@ export async function GET(_request, context) {
         background: "radial-gradient(circle at 50% 48%, rgba(47,149,200,.10), rgba(4,16,26,0) 70%)"
       }}>
         <img
-          src="https://www.forevervote.com/fv-scroll-mark-final.webp?v=locked-20260915"
+          src={lockedLogoSrc}
           width="104"
           height="104"
           alt=""
