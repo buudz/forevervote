@@ -1047,3 +1047,52 @@ h1 span{color:var(--gold-pale)}
   .profile-reputation-heading{align-items:flex-start}
   .profile-reputation-rules{align-items:flex-start;flex-direction:column}
 }
+
+
+/* Admin pending-proposal notification */
+.admin-notification{
+  position:relative;
+  width:34px;
+  height:34px;
+  display:grid;
+  place-items:center;
+  flex:0 0 auto;
+  border:1px solid rgba(135,103,51,.48);
+  border-radius:50%;
+  background:#071B2C;
+  color:#8F969B!important;
+  transition:border-color .16s ease,color .16s ease,background .16s ease,box-shadow .16s ease;
+}
+.admin-notification:hover{
+  border-color:var(--gold);
+  color:var(--gold-pale)!important;
+}
+.admin-notification.has-pending{
+  border-color:rgba(228,201,142,.82);
+  background:linear-gradient(180deg,#143C62,#092742);
+  color:var(--gold-pale)!important;
+  box-shadow:0 0 0 1px rgba(188,152,84,.08),0 0 18px rgba(188,152,84,.16);
+}
+.admin-notification-count{
+  position:absolute;
+  top:-7px;
+  right:-8px;
+  min-width:18px;
+  height:18px;
+  padding:0 5px;
+  display:grid;
+  place-items:center;
+  border:2px solid #061522;
+  border-radius:999px;
+  background:#B94C3A;
+  color:#FFF8E7;
+  font-size:9px;
+  font-weight:800;
+  line-height:1;
+  letter-spacing:0;
+  text-transform:none;
+  box-shadow:0 2px 8px rgba(0,0,0,.4);
+}
+#pending-submissions{
+  scroll-margin-top:100px;
+}
