@@ -4,7 +4,7 @@ import { getPollShareData } from "../../../../lib/supabase/polls";
 export const dynamic = "force-dynamic";
 export const runtime = "edge";
 
-const BRAND_MARK_URL = "https://www.forevervote.com/fv-scroll-mark-final.webp";
+const BRAND_MARK_URL = "https://www.forevervote.com/fv-scroll-mark.svg";
 const SITE_URL = "www.forevervote.com";
 
 function normalizeText(value) {
@@ -191,38 +191,26 @@ export async function GET(_request, context) {
       <div style={{
         position: "absolute",
         right: 88,
-        top: 70,
-        width: 118,
-        height: 118,
+        top: 72,
+        width: 112,
+        height: 112,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        border: "1px solid rgba(188,152,84,.38)",
-        borderRadius: 59,
-        background: "radial-gradient(circle at 50% 42%, rgba(47,149,200,.12), rgba(4,16,26,.30) 58%, rgba(4,16,26,.04) 72%)",
-        boxShadow: "0 10px 28px rgba(0,0,0,.20), inset 0 0 0 5px rgba(188,152,84,.035)"
+        background: "radial-gradient(circle at 50% 48%, rgba(47,149,200,.10), rgba(4,16,26,0) 70%)"
       }}>
         <img
           src={BRAND_MARK_URL}
-          width="94"
-          height="94"
+          width="104"
+          height="104"
           style={{
-            width: 94,
-            height: 94,
+            width: 104,
+            height: 104,
             objectFit: "contain"
           }}
           alt=""
         />
       </div>
-      <div style={{
-        position: "absolute",
-        right: 212,
-        top: 128,
-        width: 50,
-        height: 1,
-        display: "flex",
-        background: "linear-gradient(90deg, rgba(188,152,84,0), rgba(188,152,84,.44))"
-      }} />
 
       <div style={{
         position: "absolute",
