@@ -1,6 +1,12 @@
 -- Give the original launch polls full, canonical URL slugs.
 -- We intentionally do not keep /polls/hardcore, /polls/arena, etc. as redirects,
 -- so those short paths can later be used as category pages.
+-- The poll guard normally blocks slug edits on open polls, so this data migration
+-- disables only that guard trigger for the known launch-slug update and re-enables it immediately.
+
+begin;
+
+alter table public.polls disable trigger guard_poll;
 
 update public.polls
 set slug = case slug
@@ -30,3 +36,7 @@ where slug in (
   'flying',
   'level-cap'
 );
+
+alter table public.polls enable trigger guard_poll;
+
+commit;
