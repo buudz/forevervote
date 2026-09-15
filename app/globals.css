@@ -176,7 +176,9 @@ h1 span{color:var(--gold-pale)}
 .hero-logo{display:block;width:min(100%,560px);height:auto;filter:drop-shadow(0 18px 30px rgba(0,0,0,.36))}
 
 /* Status */
-.status-strip{background:linear-gradient(180deg,#071B2C,#061724);border-bottom:1px solid rgba(135,103,51,.58)}
+.how-it-works-section{padding:clamp(58px,7vw,92px) 0 clamp(64px,8vw,100px);border-top:1px solid rgba(135,103,51,.30);background:#06131f}
+.how-it-works-heading{margin-bottom:24px}
+.status-strip{overflow:hidden;background:linear-gradient(180deg,#071B2C,#061724);border:1px solid rgba(135,103,51,.58);border-radius:9px;box-shadow:var(--shadow),inset 0 1px 0 rgba(228,201,142,.04)}
 .status-grid{display:grid;grid-template-columns:repeat(3,1fr)}
 .status-grid>div{padding:18px 23px;display:grid;grid-template-columns:auto 1fr;column-gap:12px;border-right:1px solid rgba(135,103,51,.20)}
 .status-grid>div:last-child{border-right:0}
@@ -368,6 +370,7 @@ h1 span{color:var(--gold-pale)}
 .poll-form{display:grid;gap:20px}
 .field{display:grid;gap:7px}
 .field>span,.option-editor legend{font-family:Cinzel,Georgia,serif;color:var(--gold-pale);font-size:9px;text-transform:uppercase;letter-spacing:1px}
+.field>span em{font-family:Inter,Arial,sans-serif;font-style:normal;font-weight:400;color:var(--secondary);letter-spacing:.4px;text-transform:none}
 .field input,.field textarea,.field select{
   width:100%;
   border:1px solid rgba(135,103,51,.48);
@@ -424,3 +427,8 @@ h1 span{color:var(--gold-pale)}
   .moderation-actions{display:grid}
   .moderation-actions .button{width:100%}
 }
+
+.poll-empty-state{margin:10px 0 24px;padding:28px;border:1px solid rgba(135,103,51,.42);border-radius:9px;background:linear-gradient(145deg,#08243B,#071B2C);text-align:center;box-shadow:inset 0 1px 0 rgba(228,201,142,.04)}
+.poll-empty-state strong{display:block;color:var(--ivory);font-family:Cinzel,Georgia,serif;font-size:18px}
+.poll-empty-state span{display:block;margin:8px auto 16px;color:var(--secondary);font-size:12px}
+.poll-empty-state .button{display:inline-flex}

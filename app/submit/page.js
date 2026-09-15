@@ -19,7 +19,7 @@ export default function SubmitPollPage() {
             <p>Verified Classic WoW players can propose questions for the ForeverVote board. Every submission goes through review before it is published.</p>
             <div className="submission-note">
               <strong>What makes a good poll?</strong>
-              <span>One clear question, neutral wording, enough context to understand it, and answers that do not overlap.</span>
+              <span>One clear question, neutral wording, context only when useful, and answers that do not overlap.</span>
             </div>
           </div>
           <SubmitPollForm />

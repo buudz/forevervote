@@ -23,13 +23,14 @@ export async function generateMetadata({ params }) {
 
   const pollUrl = `${SITE_URL}/polls/${poll.slug}`;
   const imageUrl = `${SITE_URL}/api/share/poll/${poll.slug}`;
+  const description = poll.rationale || "Vote on this ForeverVote community poll.";
 
   return {
     title: `${poll.title} · ForeverVote`,
-    description: poll.rationale,
+    description,
     openGraph: {
       title: poll.title,
-      description: poll.rationale,
+      description,
       url: pollUrl,
       siteName: "ForeverVote",
       images: [{ url: imageUrl, width: 1200, height: 630, alt: poll.title }],
@@ -38,7 +39,7 @@ export async function generateMetadata({ params }) {
     twitter: {
       card: "summary_large_image",
       title: poll.title,
-      description: poll.rationale,
+      description,
       images: [imageUrl]
     }
   };
@@ -61,7 +62,7 @@ export default async function PollSharePage({ params }) {
             <div>
               <p className="kicker">Shared poll · {poll.category}</p>
               <h1 id="shared-poll-title">{poll.title}</h1>
-              <p>{poll.rationale}</p>
+              {poll.rationale && <p>{poll.rationale}</p>}
             </div>
             <span className="count-badge">{poll.options.length} options</span>
           </div>
@@ -72,7 +73,7 @@ export default async function PollSharePage({ params }) {
               <span className="draft">Community poll</span>
             </div>
             <h3>{poll.title}</h3>
-            <p className="context">{poll.rationale}</p>
+            {poll.rationale && <p className="context">{poll.rationale}</p>}
             <div className="option-preview" aria-label="Poll options">
               {poll.options.map((option) => <span className="vote-option" key={`${option.position}-${option.text}`}>
                 <span>{option.text}</span>

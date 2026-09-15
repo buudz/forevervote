@@ -4,14 +4,14 @@ import { useEffect, useState } from "react";
 import { pollCategories } from "../data/polls";
 
 const categories = pollCategories.filter((category) => category !== "All");
-const emptyOptions = ["Yes", "No"];
+const defaultOptions = ["Yes", "No", "Don't care"];
 
 export function SubmitPollForm() {
   const [auth, setAuth] = useState({ loading: true, authenticated: false });
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("General");
-  const [options, setOptions] = useState(emptyOptions);
+  const [options, setOptions] = useState(defaultOptions);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [submission, setSubmission] = useState(null);
@@ -98,7 +98,7 @@ export function SubmitPollForm() {
       setTitle("");
       setDescription("");
       setCategory("General");
-      setOptions(emptyOptions);
+      setOptions([...defaultOptions]);
       await loadAdminQueue();
     } catch (error) {
       setMessage(error.message);
@@ -169,7 +169,7 @@ export function SubmitPollForm() {
         <span className="count-badge">Review required</span>
       </div>
 
-      <p className="form-intro">Keep the question neutral and easy to understand. Submissions are reviewed before they appear on the public poll board.</p>
+      <p className="form-intro">Keep the question clear and easy to understand. Add context only when it helps. Submissions are reviewed before they appear on the public poll board.</p>
 
       <label className="field">
         <span>Poll question</span>
@@ -186,15 +186,13 @@ export function SubmitPollForm() {
       </label>
 
       <label className="field">
-        <span>Short rationale</span>
+        <span>Additional context <em>(optional)</em></span>
         <textarea
-          minLength="20"
           maxLength="1500"
-          required
           rows="5"
           value={description}
           onChange={(event) => setDescription(event.target.value)}
-          placeholder="Give voters enough context to understand the question without arguing for one answer."
+          placeholder="Add any background voters should know. Leave blank if the question stands on its own."
         />
         <small>{description.length}/1500</small>
       </label>
@@ -257,7 +255,7 @@ export function SubmitPollForm() {
               <span className="draft">{poll.creatorBattleTag} · {new Date(poll.createdAt).toLocaleDateString()}</span>
             </div>
             <h3>{poll.title}</h3>
-            <p className="context">{poll.rationale}</p>
+            {poll.rationale && <p className="context">{poll.rationale}</p>}
             <div className="moderation-options">
               {poll.options.map((option) => <span key={option.id}>{option.text}</span>)}
             </div>
