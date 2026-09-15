@@ -140,16 +140,39 @@ export function PollsSection() {
         <span className="count-badge">{pollState.polls.length} polls</span>
       </div>
 
-      <div className="filters" role="group" aria-label="Filter polls by category">
-        {pollCategories.map((item) => <button key={item} onClick={() => setCategory(item)} aria-pressed={category === item} className={category === item ? "filter active" : "filter"}>{item}</button>)}
-      </div>
+      <div
+        className="poll-controls"
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          gap: "16px 28px",
+          flexWrap: "wrap",
+          marginBottom: 24
+        }}
+      >
+        <div className="filters" style={{ marginBottom: 0 }} role="group" aria-label="Filter polls by category">
+          {pollCategories.map((item) => <button key={item} onClick={() => setCategory(item)} aria-pressed={category === item} className={category === item ? "filter active" : "filter"}>{item}</button>)}
+        </div>
 
-      <div className="filters" role="group" aria-label="Sort polls">
-        {sortOptions.map((item) => <button key={item.value} onClick={() => setSort(item.value)} aria-pressed={sort === item.value} className={sort === item.value ? "filter active" : "filter"}>{item.label}</button>)}
-      </div>
+        <div
+          className="poll-control-side"
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            alignItems: "flex-start",
+            gap: "12px 18px",
+            flexWrap: "wrap"
+          }}
+        >
+          <div className="filters" style={{ marginBottom: 0, justifyContent: "flex-end" }} role="group" aria-label="Sort polls">
+            {sortOptions.map((item) => <button key={item.value} onClick={() => setSort(item.value)} aria-pressed={sort === item.value} className={sort === item.value ? "filter active" : "filter"}>{item.label}</button>)}
+          </div>
 
-      <div className="filters" role="group" aria-label="Show voted or unvoted polls">
-        {voteFilterOptions.map((item) => <button key={item.value} onClick={() => setVoteFilter(item.value)} aria-pressed={voteFilter === item.value} className={voteFilter === item.value ? "filter active" : "filter"}>{item.label}</button>)}
+          <div className="filters" style={{ marginBottom: 0, justifyContent: "flex-end" }} role="group" aria-label="Show voted or unvoted polls">
+            {voteFilterOptions.map((item) => <button key={item.value} onClick={() => setVoteFilter(item.value)} aria-pressed={voteFilter === item.value} className={voteFilter === item.value ? "filter active" : "filter"}>{item.label}</button>)}
+          </div>
+        </div>
       </div>
 
       <p className="sr-only" aria-live="polite">{visiblePolls.length} polls shown.</p>
