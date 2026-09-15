@@ -948,3 +948,102 @@ h1 span{color:var(--gold-pale)}
   .profile-section-toggle{align-items:flex-start}
   .profile-section-toggle-meta{flex:0 0 auto}
 }
+
+
+/* ForeverVote reputation — WoW-inspired faction progress without copying the game UI */
+.profile-reputation{
+  grid-column:1 / -1;
+  display:grid;
+  gap:10px;
+  padding-top:22px;
+  border-top:1px solid rgba(135,103,51,.24);
+}
+.profile-reputation-heading{
+  display:flex;
+  align-items:end;
+  justify-content:space-between;
+  gap:18px;
+}
+.profile-reputation-heading>div{display:grid;gap:4px}
+.profile-reputation-heading span{
+  font-family:Cinzel,Georgia,serif;
+  color:var(--gold-pale);
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:1.15px;
+}
+.profile-reputation-heading small{
+  color:var(--secondary);
+  font-size:9px;
+  letter-spacing:.25px;
+}
+.profile-reputation-heading>strong{
+  font-family:Cinzel,Georgia,serif;
+  color:var(--ivory);
+  font-size:18px;
+  letter-spacing:.35px;
+}
+.profile-reputation-bar{
+  position:relative;
+  height:30px;
+  overflow:hidden;
+  border:2px solid #3C3327;
+  border-radius:4px;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.025),rgba(0,0,0,.12)),
+    #100F0D;
+  box-shadow:
+    inset 0 0 0 1px rgba(0,0,0,.78),
+    inset 0 3px 7px rgba(0,0,0,.62),
+    0 1px 0 rgba(228,201,142,.10);
+}
+.profile-reputation-fill{
+  position:absolute;
+  inset:3px auto 3px 3px;
+  width:0;
+  border-radius:2px;
+  transition:width .45s ease;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.13),inset 0 -1px 0 rgba(0,0,0,.35);
+}
+.profile-reputation-bar.rank-neutral .profile-reputation-fill{
+  background:linear-gradient(180deg,#B59622 0%,#8B6C12 48%,#6D510C 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,235,139,.28),
+    inset 0 -1px 0 rgba(62,40,0,.60),
+    1px 0 0 rgba(228,201,142,.34);
+}
+.profile-reputation-bar.rank-friendly .profile-reputation-fill,
+.profile-reputation-bar.rank-honored .profile-reputation-fill,
+.profile-reputation-bar.rank-revered .profile-reputation-fill,
+.profile-reputation-bar.rank-exalted .profile-reputation-fill{
+  background:linear-gradient(180deg,#318B3D 0%,#1F6F2D 48%,#13551F 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(176,235,174,.18),
+    inset 0 -1px 0 rgba(4,45,13,.62),
+    1px 0 0 rgba(120,205,119,.28);
+}
+.profile-reputation-value{
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  color:#F2EBD7;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.25px;
+  text-shadow:0 1px 2px #000,0 0 4px #000;
+}
+.profile-reputation-rules{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px 18px;
+  flex-wrap:wrap;
+  color:var(--secondary);
+  font-size:9px;
+}
+.profile-reputation-rules strong{color:var(--gold-pale)}
+@media(max-width:760px){
+  .profile-reputation-heading{align-items:flex-start}
+  .profile-reputation-rules{align-items:flex-start;flex-direction:column}
+}

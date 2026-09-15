@@ -354,6 +354,18 @@ export function ProfileDashboard() {
   }
 
   const { profile, dashboard } = state.data;
+  const reputation = dashboard.reputation || {
+    rank: "Neutral",
+    totalPoints: 0,
+    rankPoints: 0,
+    rankMax: 3000,
+    progressPercent: 0,
+    votePoints: 0,
+    creatorPoints: 0,
+    pollsVoted: 0,
+    uniqueVotersReceived: 0
+  };
+  const reputationRankClass = String(reputation.rank || "Neutral").toLocaleLowerCase();
 
   return <div className="profile-dashboard">
     <section className="profile-summary">
@@ -366,6 +378,34 @@ export function ProfileDashboard() {
       <div className="profile-account-checks">
         <div><span>WoW Retail account</span><strong className={profile.hasRetailProfile ? "profile-check yes" : "profile-check no"}>{profile.hasRetailProfile ? "✓ Verified" : "Not found"}</strong></div>
         <div><span>WoW Classic account</span><strong className={profile.hasClassicProfile ? "profile-check yes" : "profile-check no"}>{profile.hasClassicProfile ? "✓ Verified" : "Not found"}</strong></div>
+      </div>
+
+      <div className="profile-reputation">
+        <div className="profile-reputation-heading">
+          <div>
+            <span>ForeverVote reputation</span>
+            <small>{reputation.totalPoints.toLocaleString()} total reputation</small>
+          </div>
+          <strong>{reputation.rank}</strong>
+        </div>
+
+        <div
+          className={`profile-reputation-bar rank-${reputationRankClass}`}
+          role="progressbar"
+          aria-label={`${reputation.rank} reputation progress`}
+          aria-valuemin="0"
+          aria-valuemax={reputation.rankMax}
+          aria-valuenow={reputation.rankPoints}
+        >
+          <span className="profile-reputation-fill" style={{ width: `${reputation.progressPercent}%` }} />
+          <span className="profile-reputation-value">{reputation.rankPoints.toLocaleString()} / {reputation.rankMax.toLocaleString()}</span>
+        </div>
+
+        <div className="profile-reputation-rules">
+          <span>Vote on a poll <strong>+50</strong></span>
+          <span>Another player votes on your poll <strong>+5</strong></span>
+          <span>{reputation.pollsVoted.toLocaleString()} poll{reputation.pollsVoted === 1 ? "" : "s"} voted · {reputation.uniqueVotersReceived.toLocaleString()} creator reward{reputation.uniqueVotersReceived === 1 ? "" : "s"}</span>
+        </div>
       </div>
     </section>
 
