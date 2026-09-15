@@ -869,3 +869,82 @@ h1 span{color:var(--gold-pale)}
   .profile-poll-footer{align-items:flex-start;flex-direction:column}
   .profile-edit-heading{align-items:flex-start;flex-direction:column}
 }
+
+
+/* Collapsible profile poll collections */
+.profile-section{
+  padding:0;
+  overflow:hidden;
+}
+.profile-section-toggle{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+  padding:clamp(20px,2.5vw,30px);
+  border:0;
+  background:transparent;
+  color:inherit;
+  text-align:left;
+}
+.profile-section-toggle:hover{background:rgba(15,79,137,.07)}
+.profile-section-toggle>span:first-child{display:grid;gap:7px}
+.profile-section-toggle .kicker{margin:0}
+.profile-section-toggle strong{
+  font-family:Cinzel,Georgia,serif;
+  color:var(--ivory);
+  font-size:clamp(23px,2vw,32px);
+  line-height:1.1;
+}
+.profile-section-toggle-meta{display:flex;align-items:center;gap:12px}
+.profile-section-content{
+  border-top:1px solid rgba(135,103,51,.25);
+  padding:0 clamp(20px,2.5vw,30px) clamp(22px,2.8vw,32px);
+}
+.profile-list-tools{
+  display:grid;
+  grid-template-columns:minmax(220px,1fr) minmax(160px,220px);
+  gap:12px;
+  align-items:end;
+  padding-top:20px;
+}
+.profile-search input,.profile-sort select{
+  width:100%;
+  min-height:42px;
+  border:1px solid rgba(135,103,51,.48);
+  border-radius:7px;
+  background:#061522;
+  color:var(--ivory);
+  padding:10px 12px;
+  font:inherit;
+  font-size:11px;
+  outline:none;
+}
+.profile-search input:focus,.profile-sort select:focus{
+  border-color:var(--gold);
+  box-shadow:0 0 0 2px rgba(188,152,84,.08);
+}
+.profile-sort{display:grid;gap:6px}
+.profile-sort>span{
+  font-family:Cinzel,Georgia,serif;
+  color:var(--gold-pale);
+  font-size:8px;
+  text-transform:uppercase;
+  letter-spacing:1px;
+}
+.profile-results-meta{
+  margin:12px 0 14px;
+  color:var(--secondary);
+  font-size:9px;
+  text-transform:uppercase;
+  letter-spacing:.7px;
+}
+.profile-empty.compact{padding:28px 0 8px}
+.profile-section-content .profile-empty:not(.compact){padding:28px 0 6px}
+
+@media(max-width:700px){
+  .profile-list-tools{grid-template-columns:1fr}
+  .profile-section-toggle{align-items:flex-start}
+  .profile-section-toggle-meta{flex:0 0 auto}
+}
