@@ -39,10 +39,10 @@ export function AuthStatus() {
 
   return <div className="auth-status" aria-label="Battle.net account status">
     {auth.admin && <a className="auth-admin" href="/admin">Admin</a>}
-    <span className="auth-user">
+    <a className="auth-user" href="/profile" aria-label="Open your ForeverVote profile">
       <strong>{auth.user?.battletag || "Battle.net user"}</strong>
       <small>{verifiedLabel}</small>
-    </span>
+    </a>
     <a className="auth-logout" href="/api/auth/logout">Logout</a>
   </div>;
 }
