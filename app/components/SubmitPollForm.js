@@ -6,6 +6,47 @@ import { pollCategories } from "../data/polls";
 const categories = pollCategories.filter((category) => category !== "All");
 const defaultOptions = ["Yes", "No", "Don't care"];
 
+function validateBeforeSubmit({ title, description, options }) {
+  const cleanTitle = title.trim();
+  const cleanDescription = description.trim();
+  const cleanOptions = options.map((option) => option.trim());
+
+  if (cleanTitle.length < 10 || cleanTitle.length > 180) {
+    return "The poll question must be between 10 and 180 characters.";
+  }
+
+  if (/[<>]/.test(cleanTitle)) {
+    return "The poll question cannot contain < or >.";
+  }
+
+  if (cleanDescription.length > 1500) {
+    return "Additional context must be 1500 characters or fewer.";
+  }
+
+  if (/[<>]/.test(cleanDescription)) {
+    return "Additional context cannot contain < or >.";
+  }
+
+  if (cleanOptions.length < 2 || cleanOptions.length > 20) {
+    return "Polls need between 2 and 20 options.";
+  }
+
+  if (cleanOptions.some((option) => option.length < 1 || option.length > 100)) {
+    return "Each poll option must be between 1 and 100 characters.";
+  }
+
+  if (cleanOptions.some((option) => /[<>]/.test(option))) {
+    return "Poll options cannot contain < or >.";
+  }
+
+  const uniqueOptions = new Set(cleanOptions.map((option) => option.toLocaleLowerCase()));
+  if (uniqueOptions.size !== cleanOptions.length) {
+    return "Poll options must all be different.";
+  }
+
+  return "";
+}
+
 export function SubmitPollForm() {
   const [auth, setAuth] = useState({ loading: true, authenticated: false });
   const [title, setTitle] = useState("");
@@ -52,9 +93,16 @@ export function SubmitPollForm() {
 
   async function submit(event) {
     event.preventDefault();
-    setSubmitting(true);
     setMessage("");
     setSubmission(null);
+
+    const validationError = validateBeforeSubmit({ title, description, options });
+    if (validationError) {
+      setMessage(validationError);
+      return;
+    }
+
+    setSubmitting(true);
 
     try {
       const response = await fetch("/api/polls/submit", {
