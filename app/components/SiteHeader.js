@@ -4,7 +4,15 @@ export function SiteHeader() {
   return <header className="site-header">
     <div className="wrap header-inner">
       <a className="brand" href="/" aria-label="ForeverVote home">
-        <span className="brand-mark" aria-hidden="true">FV</span>
+        <img
+          className="brand-logo"
+          src="/fv-logo-small.webp"
+          width="42"
+          height="42"
+          alt=""
+          aria-hidden="true"
+          style={{ width: 42, height: 42, objectFit: "contain", flex: "0 0 auto" }}
+        />
         <span className="brand-copy">
           <strong>ForeverVote</strong>
           <small>World of Warcraft: Forever · Community Voting Hub</small>
