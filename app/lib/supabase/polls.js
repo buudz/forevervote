@@ -397,20 +397,82 @@ export async function retractVote({ pollSlug, optionId, userId }) {
 }
 
 export async function submitPollDraft({ creatorId, slug, title, description, category, options, allowMultipleAnswers = false }) {
-  const rows = await supabaseRequest("/rpc/submit_poll_v2", {
+  const now = Date.now();
+  const tenMinutesAgo = new Date(now - (10 * 60 * 1000)).toISOString();
+  const dayAgo = new Date(now - (24 * 60 * 60 * 1000)).toISOString();
+
+  const [recentPolls, dailyPolls] = await Promise.all([
+    supabaseRequest(
+      `/polls?select=id&creator_id=eq.${encodeFilterValue(creatorId)}&created_at=gt.${encodeFilterValue(tenMinutesAgo)}`
+    ),
+    supabaseRequest(
+      `/polls?select=id&creator_id=eq.${encodeFilterValue(creatorId)}&created_at=gt.${encodeFilterValue(dayAgo)}`
+    )
+  ]);
+
+  if ((recentPolls || []).length >= 3 || (dailyPolls || []).length >= 10) {
+    const error = new Error("Too many poll submissions recently");
+    error.code = "RATE_LIMITED";
+    throw error;
+  }
+
+  const rows = await supabaseRequest("/polls?select=id,slug,status,created_at", {
     method: "POST",
+    headers: {
+      Prefer: "return=representation"
+    },
     body: JSON.stringify({
-      p_creator_id: creatorId,
-      p_slug: slug,
-      p_title: title,
-      p_description: description,
-      p_category: category,
-      p_options: options,
-      p_allow_multiple_answers: Boolean(allowMultipleAnswers)
+      creator_id: creatorId,
+      slug,
+      title,
+      description,
+      category,
+      status: "draft",
+      allow_custom_answers: false,
+      allow_multiple_answers: Boolean(allowMultipleAnswers)
     })
   });
 
-  return rows?.[0] || null;
+  const poll = rows?.[0];
+
+  if (!poll?.id) {
+    throw new Error("Supabase did not return a poll id");
+  }
+
+  const optionRows = options.map((option, index) => ({
+    poll_id: poll.id,
+    text: option,
+    position: index + 1,
+    is_neutral: ["don't care", "no preference", "undecided", "no strong opinion"]
+      .includes(String(option).trim().toLowerCase())
+  }));
+
+  try {
+    await supabaseRequest("/poll_options", {
+      method: "POST",
+      headers: {
+        Prefer: "return=minimal"
+      },
+      body: JSON.stringify(optionRows)
+    });
+  } catch (error) {
+    await supabaseRequest(
+      `/polls?id=eq.${encodeFilterValue(poll.id)}&status=eq.draft`,
+      {
+        method: "DELETE",
+        headers: { Prefer: "return=minimal" }
+      }
+    ).catch(() => null);
+
+    throw error;
+  }
+
+  return {
+    poll_id: poll.id,
+    poll_slug: poll.slug,
+    poll_status: poll.status || "draft",
+    submitted_at: poll.created_at
+  };
 }
 
 function buildAdminPoll(row) {
