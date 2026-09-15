@@ -19,8 +19,9 @@ export function SiteHeader() {
         </span>
       </a>
       <nav className="nav" aria-label="Primary navigation">
-        <a href="#polls">Polls</a>
-        <a href="#about">About</a>
+        <a href="/#polls">Polls</a>
+        <a className="nav-submit" href="/submit">Submit Poll</a>
+        <a href="/#about">About</a>
         <AuthStatus />
       </nav>
     </div>
