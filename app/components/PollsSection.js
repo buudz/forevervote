@@ -17,11 +17,88 @@ const voteFilterOptions = [
   { value: "voted", label: "Voted" }
 ];
 
+const modalBackdropStyle = {
+  position: "fixed",
+  inset: 0,
+  zIndex: 80,
+  display: "grid",
+  placeItems: "center",
+  padding: 20,
+  background: "rgba(0,0,0,.72)",
+  backdropFilter: "blur(7px)"
+};
+
+const modalStyle = {
+  width: "min(620px, 100%)",
+  border: "1px solid rgba(188,152,84,.55)",
+  borderRadius: 14,
+  background: "linear-gradient(180deg,#08243B,#061522)",
+  color: "var(--text)",
+  boxShadow: "0 24px 70px rgba(0,0,0,.55), inset 0 1px 0 rgba(228,201,142,.08)",
+  padding: 24
+};
+
+const modalTopStyle = {
+  display: "flex",
+  alignItems: "flex-start",
+  justifyContent: "space-between",
+  gap: 20,
+  marginBottom: 18
+};
+
+const shareActionsStyle = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(112px, 1fr))",
+  gap: 10,
+  margin: "18px 0"
+};
+
+const shareActionStyle = {
+  minHeight: 44,
+  border: "1px solid rgba(135,103,51,.62)",
+  borderRadius: 9,
+  background: "#071B2C",
+  color: "var(--ivory)",
+  fontSize: 11,
+  fontWeight: 700,
+  textTransform: "uppercase",
+  letterSpacing: ".8px"
+};
+
+const shareTextStyle = {
+  display: "block",
+  width: "100%",
+  minHeight: 118,
+  resize: "vertical",
+  border: "1px solid rgba(135,103,51,.48)",
+  borderRadius: 10,
+  background: "#04101C",
+  color: "var(--text)",
+  padding: 14,
+  font: "inherit",
+  fontSize: 13,
+  lineHeight: 1.6
+};
+
+function buildSharePayload(poll) {
+  const slug = poll.slug || poll.id;
+  const pollUrl = new URL(`/polls/${slug}`, window.location.origin).toString();
+  const imageUrl = new URL(`/api/share/poll/${slug}`, window.location.origin).toString();
+  const text = `${poll.title} Vote on ForeverVote: ${pollUrl} Share image: ${imageUrl}`;
+
+  return { title: poll.title, pollUrl, imageUrl, text };
+}
+
+function openShareWindow(url) {
+  window.open(url, "_blank", "noopener,noreferrer,width=760,height=620");
+}
+
 export function PollsSection() {
   const [category, setCategory] = useState("All");
   const [sort, setSort] = useState("explore");
   const [voteFilter, setVoteFilter] = useState(null);
   const [shareMessage, setShareMessage] = useState("");
+  const [sharePayload, setSharePayload] = useState(null);
   const [statusMessage, setStatusMessage] = useState("");
   const [auth, setAuth] = useState({ loading: true, authenticated: false });
   const [pollState, setPollState] = useState({ loading: true, databaseReady: false, polls: fallbackPolls });
@@ -98,28 +175,74 @@ export function PollsSection() {
       active = false;
     };
   }, [sort, voteFilter]);
+
+  useEffect(() => {
+    if (!sharePayload) {
+      return undefined;
+    }
+
+    function closeOnEscape(event) {
+      if (event.key === "Escape") {
+        setSharePayload(null);
+      }
+    }
+
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [sharePayload]);
+
   const visiblePolls = useMemo(() => {
     return pollState.polls.filter((poll) => category === "All" || poll.category === category);
   }, [category, pollState.polls]);
 
-  async function sharePoll(poll) {
-    const slug = poll.slug || poll.id;
-    const pollUrl = new URL(`/polls/${slug}`, window.location.origin).toString();
-    const imageUrl = new URL(`/api/share/poll/${slug}`, window.location.origin).toString();
-    const text = `${poll.title}\n${poll.rationale || poll.context || "Vote on ForeverVote."}`;
+  function sharePoll(poll) {
+    setShareMessage("");
+    setSharePayload(buildSharePayload(poll));
+  }
+
+  async function copyShareText() {
+    if (!sharePayload) {
+      return;
+    }
 
     try {
-      if (navigator.share) {
-        await navigator.share({ title: poll.title, text, url: pollUrl });
-        setShareMessage("Share sheet opened.");
-        return;
-      }
-
-      await navigator.clipboard.writeText(`${text}\n\nVote here: ${pollUrl}\nShare image: ${imageUrl}`);
-      setShareMessage("Poll share link copied. The link includes a preview image for social posts.");
+      await navigator.clipboard.writeText(sharePayload.text);
+      setShareMessage("Share text copied.");
     } catch {
-      setShareMessage("Copy this link: " + pollUrl);
+      setShareMessage("Copy from the share box manually.");
     }
+  }
+
+  function shareToX() {
+    if (!sharePayload) {
+      return;
+    }
+
+    openShareWindow(`https://twitter.com/intent/tweet?text=${encodeURIComponent(sharePayload.text)}`);
+  }
+
+  function shareToFacebook() {
+    if (!sharePayload) {
+      return;
+    }
+
+    openShareWindow(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(sharePayload.pollUrl)}`);
+  }
+
+  function shareToWhatsApp() {
+    if (!sharePayload) {
+      return;
+    }
+
+    openShareWindow(`https://wa.me/?text=${encodeURIComponent(sharePayload.text)}`);
+  }
+
+  function shareByEmail() {
+    if (!sharePayload) {
+      return;
+    }
+
+    window.location.href = `mailto:?subject=${encodeURIComponent(sharePayload.title)}&body=${encodeURIComponent(sharePayload.text)}`;
   }
 
   async function submitVote(pollSlug, optionId) {
@@ -239,5 +362,43 @@ export function PollsSection() {
 
       <p className="share-status" role="status">{shareMessage}</p>
     </div>
+
+    {sharePayload && <div style={modalBackdropStyle} onMouseDown={() => setSharePayload(null)}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="share-modal-title"
+        style={modalStyle}
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <div style={modalTopStyle}>
+          <div>
+            <p className="kicker" style={{ marginBottom: 10 }}>Share poll</p>
+            <h3 id="share-modal-title" style={{ fontSize: "clamp(22px,3vw,30px)", color: "var(--ivory)" }}>{sharePayload.title}</h3>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSharePayload(null)}
+            aria-label="Close share dialog"
+            style={{ ...shareActionStyle, minHeight: 38, width: 42, padding: 0 }}
+          >×</button>
+        </div>
+
+        <textarea readOnly value={sharePayload.text} style={shareTextStyle} onFocus={(event) => event.target.select()} aria-label="Share text" />
+
+        <div style={shareActionsStyle}>
+          <button type="button" style={shareActionStyle} onClick={copyShareText}>Copy text</button>
+          <button type="button" style={shareActionStyle} onClick={shareToX}>X</button>
+          <button type="button" style={shareActionStyle} onClick={shareToFacebook}>Facebook</button>
+          <button type="button" style={shareActionStyle} onClick={shareToWhatsApp}>WhatsApp</button>
+          <button type="button" style={shareActionStyle} onClick={shareByEmail}>Email</button>
+          <a style={{ ...shareActionStyle, display: "grid", placeItems: "center" }} href={sharePayload.imageUrl} target="_blank" rel="noreferrer">Image</a>
+        </div>
+
+        <p className="share-status" style={{ marginBottom: 0 }}>
+          Copy the text, or open the generated image and upload it with your post.
+        </p>
+      </div>
+    </div>}
   </section>;
 }
