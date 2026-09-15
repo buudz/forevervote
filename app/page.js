@@ -68,10 +68,8 @@ const websiteStructuredData = {
       description: "Independent community-run fan project for World of Warcraft: Forever polling and public player feedback.",
       logo: {
         "@type": "ImageObject",
-        url: absoluteUrl("/favicon.png"),
-        contentUrl: absoluteUrl("/favicon.png"),
-        width: 192,
-        height: 192
+        url: absoluteUrl("/fv-scroll-mark-final.webp"),
+        contentUrl: absoluteUrl("/fv-scroll-mark-final.webp")
       }
     }
   ]

@@ -101,7 +101,7 @@ export function PollsSection({ initialPolls = fallbackPolls, initialDatabaseRead
   const [pollState, setPollState] = useState({
     loading: false,
     databaseReady: initialDatabaseReady,
-    polls: initialPolls.length ? initialPolls : fallbackPolls
+    polls: initialDatabaseReady ? initialPolls : fallbackPolls
   });
   const [votingOptionId, setVotingOptionId] = useState(null);
 
