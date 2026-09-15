@@ -1,5 +1,5 @@
 import { AboutSection } from "./components/AboutSection";
-import { Hero } from "./components/Hero";
+import { Hero, LaunchHero } from "./components/Hero";
 import { PollsSection } from "./components/PollsSection";
 import { SiteFooter } from "./components/SiteFooter";
 import { SiteHeader } from "./components/SiteHeader";
@@ -92,11 +92,12 @@ export default async function Home() {
     <a className="skip" href="#main">Skip to content</a>
     <SiteHeader />
     <main id="main">
-      <Hero />
+      <LaunchHero />
       <PollsSection
         initialPolls={initialPollState.polls}
         initialDatabaseReady={initialPollState.databaseReady}
       />
+      <Hero />
       <StatusStrip />
       <AboutSection />
     </main>
