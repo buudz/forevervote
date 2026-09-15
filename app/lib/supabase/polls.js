@@ -206,6 +206,25 @@ export async function castVote({ pollSlug, optionId, userId }) {
   return rows?.[0] || null;
 }
 
+export async function retractVote({ pollSlug, optionId, userId }) {
+  const poll = await getOpenPollBySlug(pollSlug);
+
+  if (!poll?.id) {
+    const error = new Error("Poll not found or not open");
+    error.status = 404;
+    throw error;
+  }
+
+  const rows = await supabaseRequest(
+    `/votes?poll_id=eq.${encodeFilterValue(poll.id)}&user_id=eq.${encodeFilterValue(userId)}&option_id=eq.${encodeFilterValue(optionId)}`,
+    {
+      method: "DELETE",
+      headers: { Prefer: "return=representation" }
+    }
+  );
+
+  return rows?.[0] || null;
+}
 
 export async function submitPollDraft({ creatorId, slug, title, description, category, options }) {
   const rows = await supabaseRequest("/rpc/submit_poll", {

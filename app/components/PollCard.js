@@ -38,13 +38,13 @@ export function PollCard({ poll, canVote, authReady, databaseReady, onShare, onV
           onClick={() => onVote(poll.slug, option.id)}
           aria-pressed={selected}
         >
-          <span>{isVoting ? "Saving…" : option.text}</span>
+          <span>{isVoting ? (selected ? "Removing…" : "Saving…") : option.text}</span>
           <small>{option.voteCount} · {percent}%</small>
         </button>;
       })}
     </div>
     <div className="card-footer">
-      <span>{poll.userVoteOptionId ? "Your vote is saved. Click another option to change it." : disabledReason || "Choose one option to vote."}</span>
+      <span>{poll.userVoteOptionId ? "Your vote is saved. Click it again to remove it, or choose another option." : disabledReason || "Choose one option to vote."}</span>
       <button onClick={() => onShare(poll)} aria-label={"Share poll: " + poll.title}>Share ↗</button>
     </div>
   </article>;

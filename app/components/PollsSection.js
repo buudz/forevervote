@@ -50,7 +50,7 @@ const sharePreviewStyle = {
   display: "block",
   width: "100%",
   aspectRatio: "1200 / 630",
-  marginBottom: 14,
+  marginBottom: 18,
   border: "1px solid rgba(188,152,84,.42)",
   borderRadius: 12,
   background: "#04101C",
@@ -77,25 +77,10 @@ const shareActionStyle = {
   letterSpacing: ".8px"
 };
 
-const shareTextStyle = {
-  display: "block",
-  width: "100%",
-  minHeight: 96,
-  resize: "vertical",
-  border: "1px solid rgba(135,103,51,.48)",
-  borderRadius: 10,
-  background: "#04101C",
-  color: "var(--text)",
-  padding: 14,
-  font: "inherit",
-  fontSize: 14,
-  lineHeight: 1.6
-};
-
 function buildSharePayload(poll) {
   const slug = poll.slug || poll.id;
   const pollUrl = new URL(`/polls/${slug}`, window.location.origin).toString();
-  const imageUrl = new URL(`/api/share/poll/${slug}?v=2`, window.location.origin).toString();
+  const imageUrl = new URL(`/api/share/poll/${slug}?v=3`, window.location.origin).toString();
   const text = `${poll.title}\n\nVote on ForeverVote:\n${pollUrl}`;
 
   return { title: poll.title, pollUrl, imageUrl, text };
@@ -108,7 +93,7 @@ function openShareWindow(url) {
 export function PollsSection() {
   const [category, setCategory] = useState("All");
   const [sort, setSort] = useState("explore");
-  const [voteFilter, setVoteFilter] = useState(null);
+  const [voteFilter, setVoteFilter] = useState("all");
   const [shareMessage, setShareMessage] = useState("");
   const [sharePayload, setSharePayload] = useState(null);
   const [statusMessage, setStatusMessage] = useState("");
@@ -120,11 +105,7 @@ export function PollsSection() {
   const canVote = Boolean(auth.authenticated && auth.wowProfile?.hasClassicProfile && pollState.databaseReady);
 
   async function loadPolls(nextSort = sort, nextVoteFilter = voteFilter, active = true) {
-    if (!nextVoteFilter) {
-      return;
-    }
-
-    const params = new URLSearchParams({ sort: nextSort, filter: nextVoteFilter });
+    const params = new URLSearchParams({ sort: nextSort, filter: nextVoteFilter || "all" });
     const pollsResponse = await fetch(`/api/polls?${params.toString()}`, { cache: "no-store" });
 
     if (!active) {
@@ -154,7 +135,7 @@ export function PollsSection() {
         }
 
         setAuth({ loading: false, ...data });
-        setVoteFilter(data.authenticated && data.wowProfile?.hasClassicProfile ? "unvoted" : "all");
+        setVoteFilter("all");
       })
       .catch(() => {
         if (active) {
@@ -169,10 +150,6 @@ export function PollsSection() {
   }, []);
 
   useEffect(() => {
-    if (!voteFilter) {
-      return undefined;
-    }
-
     let active = true;
     setPollState((current) => ({ ...current, loading: true }));
 
@@ -212,16 +189,16 @@ export function PollsSection() {
     setSharePayload(buildSharePayload(poll));
   }
 
-  async function copyShareText() {
+  async function copyShareLink() {
     if (!sharePayload) {
       return;
     }
 
     try {
-      await navigator.clipboard.writeText(sharePayload.text);
-      setShareMessage("Share text copied.");
+      await navigator.clipboard.writeText(sharePayload.pollUrl);
+      setShareMessage("Poll link copied.");
     } catch {
-      setShareMessage("Copy from the share box manually.");
+      setShareMessage("Copy the poll URL from your browser.");
     }
   }
 
@@ -263,6 +240,9 @@ export function PollsSection() {
       return;
     }
 
+    const currentPoll = pollState.polls.find((poll) => (poll.slug || poll.id) === pollSlug);
+    const isRetracting = currentPoll?.userVoteOptionId === optionId;
+
     setVotingOptionId(optionId);
     setStatusMessage("");
 
@@ -270,7 +250,7 @@ export function PollsSection() {
       const response = await fetch(`/api/polls/${encodeURIComponent(pollSlug)}/vote`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ optionId })
+        body: JSON.stringify({ optionId, action: isRetracting ? "retract" : "vote" })
       });
       const data = await response.json().catch(() => ({}));
 
@@ -279,7 +259,7 @@ export function PollsSection() {
       }
 
       await loadPolls(sort, voteFilter);
-      setStatusMessage("Vote saved.");
+      setStatusMessage(isRetracting ? "Vote removed." : "Vote saved.");
     } catch (error) {
       setStatusMessage(error.message === "classic_profile_required"
         ? "A Classic WoW profile is required to vote."
@@ -398,10 +378,8 @@ export function PollsSection() {
 
         <img src={sharePayload.imageUrl} alt="" aria-hidden="true" style={sharePreviewStyle} />
 
-        <textarea readOnly value={sharePayload.text} style={shareTextStyle} onFocus={(event) => event.target.select()} aria-label="Share text" />
-
         <div style={shareActionsStyle}>
-          <button type="button" style={shareActionStyle} onClick={copyShareText}>Copy text</button>
+          <button type="button" style={shareActionStyle} onClick={copyShareLink}>Copy link</button>
           <button type="button" style={shareActionStyle} onClick={shareToX}>X</button>
           <button type="button" style={shareActionStyle} onClick={shareToFacebook}>Facebook</button>
           <button type="button" style={shareActionStyle} onClick={shareToWhatsApp}>WhatsApp</button>
@@ -410,7 +388,7 @@ export function PollsSection() {
         </div>
 
         <p className="share-status" style={{ marginBottom: 0 }}>
-          Copy the text or use a direct share button. The poll link carries this preview card automatically where supported.
+          Copy the poll link or use a direct share button. The link carries this preview card automatically where supported.
         </p>
       </div>
     </div>}
