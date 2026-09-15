@@ -205,3 +205,88 @@ export async function castVote({ pollSlug, optionId, userId }) {
 
   return rows?.[0] || null;
 }
+
+
+export async function submitPollDraft({ creatorId, slug, title, description, category, options }) {
+  const rows = await supabaseRequest("/rpc/submit_poll", {
+    method: "POST",
+    body: JSON.stringify({
+      p_creator_id: creatorId,
+      p_slug: slug,
+      p_title: title,
+      p_description: description,
+      p_category: category,
+      p_options: options
+    })
+  });
+
+  return rows?.[0] || null;
+}
+
+export async function getPendingPollSubmissions() {
+  const rows = await supabaseRequest(
+    "/polls?select=id,creator_id,slug,title,description,category,status,created_at,poll_options(id,text,position,is_neutral)&status=eq.draft&order=created_at.asc"
+  );
+
+  const creatorIds = [...new Set(rows.map((row) => row.creator_id).filter(Boolean))];
+  const usersById = new Map();
+
+  if (creatorIds.length > 0) {
+    const users = await supabaseRequest(
+      `/users?select=id,battletag&id=in.(${creatorIds.join(",")})`
+    );
+    users.forEach((user) => usersById.set(user.id, user.battletag));
+  }
+
+  return rows.map((row) => ({
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    rationale: row.description,
+    category: row.category,
+    status: row.status,
+    createdAt: row.created_at,
+    creatorBattleTag: usersById.get(row.creator_id) || "Unknown BattleTag",
+    options: (row.poll_options || [])
+      .sort(sortByPosition)
+      .map((option) => ({
+        id: option.id,
+        text: option.text,
+        position: option.position,
+        isNeutral: Boolean(option.is_neutral)
+      }))
+  }));
+}
+
+export async function moderatePollSubmission({ pollId, action }) {
+  const nextStatus = action === "publish" ? "open" : action === "reject" ? "hidden" : null;
+
+  if (!nextStatus) {
+    const error = new Error("Invalid moderation action");
+    error.status = 400;
+    throw error;
+  }
+
+  const rows = await supabaseRequest(
+    `/polls?id=eq.${encodeFilterValue(pollId)}&status=eq.draft`,
+    {
+      method: "PATCH",
+      headers: {
+        Prefer: "return=representation"
+      },
+      body: JSON.stringify({ status: nextStatus })
+    }
+  );
+
+  if (!rows?.[0]) {
+    const error = new Error("Pending poll not found");
+    error.status = 404;
+    throw error;
+  }
+
+  return {
+    id: rows[0].id,
+    slug: rows[0].slug,
+    status: rows[0].status
+  };
+}
