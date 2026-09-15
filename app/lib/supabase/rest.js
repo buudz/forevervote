@@ -40,7 +40,12 @@ export async function supabaseRequest(path, options = {}) {
 
   if (!response.ok) {
     const message = data?.message || data?.hint || data?.details || `Supabase request failed with status ${response.status}`;
-    throw new Error(message);
+    const error = new Error(message);
+    error.status = response.status;
+    error.code = data?.code || null;
+    error.details = data?.details || null;
+    error.hint = data?.hint || null;
+    throw error;
   }
 
   return data;
