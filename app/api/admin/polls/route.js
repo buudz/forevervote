@@ -74,7 +74,7 @@ export async function POST(request) {
       const rationale = typeof body?.rationale === "string" ? body.rationale.trim() : "";
       const allowMultipleAnswers = body?.allowMultipleAnswers === true;
 
-      if (title.length < 10 || title.length > 180 || /[<>]/.test(title)) {
+      if (title.length < 10 || title.length > 90 || /[<>]/.test(title)) {
         return json({ ok: false, error: "invalid_title" }, 400);
       }
 

@@ -49,11 +49,11 @@ function submissionFailure(error) {
     };
   }
 
-  if (combined.includes("title") && (combined.includes("180") || combined.includes("invalid poll title"))) {
+  if (combined.includes("title") && (combined.includes("90") || combined.includes("invalid poll title"))) {
     return {
       status: 400,
       error: "invalid_title",
-      message: "The poll question must be between 10 and 180 characters."
+      message: "The poll question must be between 10 and 90 characters."
     };
   }
 
@@ -135,8 +135,8 @@ function validateSubmission(body) {
   const options = rawOptions.map(clean);
   const allowMultipleAnswers = body?.allowMultipleAnswers === true;
 
-  if (title.length < 10 || title.length > 180 || /[<>]/.test(title)) {
-    return { error: "Title must be 10–180 characters and cannot contain < or >." };
+  if (title.length < 10 || title.length > 90 || /[<>]/.test(title)) {
+    return { error: "Title must be 10–90 characters and cannot contain < or >." };
   }
 
   if (description.length > 1500 || /[<>]/.test(description)) {

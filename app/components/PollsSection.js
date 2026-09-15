@@ -80,7 +80,7 @@ const shareActionStyle = {
 function buildSharePayload(poll) {
   const slug = poll.slug || poll.id;
   const pollUrl = new URL(`/polls/${slug}`, window.location.origin).toString();
-  const imageUrl = new URL(`/api/share/poll/${slug}?v=3`, window.location.origin).toString();
+  const imageUrl = new URL(`/api/share/poll/${slug}?v=8`, window.location.origin).toString();
   const text = `${poll.title}\n\nVote on ForeverVote:\n${pollUrl}`;
 
   return { title: poll.title, pollUrl, imageUrl, text };
@@ -139,11 +139,13 @@ export function PollsSection({ initialPolls = fallbackPolls, initialDatabaseRead
         }
 
         setAuth({ loading: false, ...data });
-        setVoteFilter("all");
+        setSort(data.preferences?.sort || "explore");
+        setVoteFilter(data.preferences?.voteFilter || "unvoted");
       })
       .catch(() => {
         if (active) {
           setAuth({ loading: false, authenticated: false });
+          setSort("explore");
           setVoteFilter("all");
         }
       });
@@ -187,6 +189,28 @@ export function PollsSection({ initialPolls = fallbackPolls, initialDatabaseRead
   const visiblePolls = useMemo(() => {
     return pollState.polls.filter((poll) => category === "All" || poll.category === category);
   }, [category, pollState.polls]);
+
+  function persistPreferences(next) {
+    if (!auth.authenticated) {
+      return;
+    }
+
+    fetch("/api/profile/preferences", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(next)
+    }).catch(() => null);
+  }
+
+  function chooseSort(value) {
+    setSort(value);
+    persistPreferences({ sort: value });
+  }
+
+  function chooseVoteFilter(value) {
+    setVoteFilter(value);
+    persistPreferences({ voteFilter: value });
+  }
 
   function sharePoll(poll) {
     setShareMessage("");
@@ -317,11 +341,11 @@ export function PollsSection({ initialPolls = fallbackPolls, initialDatabaseRead
           }}
         >
           <div className="filters" style={{ marginBottom: 0, justifyContent: "flex-end" }} role="group" aria-label="Sort polls">
-            {sortOptions.map((item) => <button key={item.value} onClick={() => setSort(item.value)} aria-pressed={sort === item.value} className={sort === item.value ? "filter active" : "filter"}>{item.label}</button>)}
+            {sortOptions.map((item) => <button key={item.value} onClick={() => chooseSort(item.value)} aria-pressed={sort === item.value} className={sort === item.value ? "filter active" : "filter"}>{item.label}</button>)}
           </div>
 
           <div className="filters" style={{ marginBottom: 0, justifyContent: "flex-end" }} role="group" aria-label="Show voted or unvoted polls">
-            {voteFilterOptions.map((item) => <button key={item.value} onClick={() => setVoteFilter(item.value)} aria-pressed={voteFilter === item.value} className={voteFilter === item.value ? "filter active" : "filter"}>{item.label}</button>)}
+            {voteFilterOptions.map((item) => <button key={item.value} onClick={() => chooseVoteFilter(item.value)} aria-pressed={voteFilter === item.value} className={voteFilter === item.value ? "filter active" : "filter"}>{item.label}</button>)}
           </div>
         </div>
       </div>
@@ -336,13 +360,13 @@ export function PollsSection({ initialPolls = fallbackPolls, initialDatabaseRead
           ? <>
               <strong>{category === "All" ? "You’re all caught up." : "Nothing left to vote on here."}</strong>
               <span>{category === "All" ? "You’ve voted on all available polls." : "You’ve voted on every available poll in this category."}</span>
-              <button className="button secondary" type="button" onClick={() => setVoteFilter("all")}>View all polls</button>
+              <button className="button secondary" type="button" onClick={() => chooseVoteFilter("all")}>View all polls</button>
             </>
           : voteFilter === "voted"
             ? <>
                 <strong>No voted polls yet.</strong>
                 <span>Your completed votes will appear here.</span>
-                <button className="button secondary" type="button" onClick={() => setVoteFilter("unvoted")}>Show unvoted</button>
+                <button className="button secondary" type="button" onClick={() => chooseVoteFilter("unvoted")}>Show unvoted</button>
               </>
             : <>
                 <strong>No polls found.</strong>

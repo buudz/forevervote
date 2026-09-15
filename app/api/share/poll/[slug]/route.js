@@ -93,9 +93,10 @@ export async function GET(_request, context) {
     return new Response("Poll not found", { status: 404 });
   }
 
-  const titleLines = splitLines(poll.title, 30, 3);
-  const titleFontSize = titleLines.length >= 3 ? 52 : 60;
-  const titleLineHeight = titleLines.length >= 3 ? 58 : 66;
+  const shareTitle = truncate(poll.title, 90);
+  const titleLines = splitLines(shareTitle, 34, 3);
+  const titleFontSize = titleLines.length >= 3 ? 48 : titleLines.length === 2 ? 54 : 60;
+  const titleLineHeight = titleLines.length >= 3 ? 54 : titleLines.length === 2 ? 61 : 66;
   const optionLabels = getOptionLabels(poll.options);
   const categoryWidth = Math.min(312, 122 + normalizeText(poll.category).length * 13);
 
@@ -169,20 +170,32 @@ export async function GET(_request, context) {
         <div style={{ width: 760, height: 1, background: "rgba(135,103,51,.34)" }} />
       </div>
 
-      <img
-        src={BRAND_MARK_URL}
-        width="156"
-        height="156"
-        style={{
-          position: "absolute",
-          right: 98,
-          top: 80,
-          width: 156,
-          height: 156,
-          objectFit: "contain"
-        }}
-        alt=""
-      />
+      <div style={{
+        position: "absolute",
+        right: 86,
+        top: 68,
+        width: 132,
+        height: 132,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        border: "1px solid rgba(188,152,84,.48)",
+        borderRadius: 22,
+        background: "radial-gradient(circle at 50% 40%, rgba(47,149,200,.12), rgba(4,16,26,.72) 72%)",
+        boxShadow: "0 12px 34px rgba(0,0,0,.28), inset 0 1px 0 rgba(228,201,142,.10)"
+      }}>
+        <img
+          src={BRAND_MARK_URL}
+          width="108"
+          height="108"
+          style={{
+            width: 108,
+            height: 108,
+            objectFit: "contain"
+          }}
+          alt=""
+        />
+      </div>
 
       <div style={{
         position: "absolute",
