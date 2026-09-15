@@ -401,24 +401,35 @@ export async function retractVote({ pollSlug, optionId, userId }) {
   return Boolean(removed);
 }
 
-export async function submitPollDraft({ creatorId, slug, title, description, category, options, allowMultipleAnswers = false }) {
-  const now = Date.now();
-  const tenMinutesAgo = new Date(now - (10 * 60 * 1000)).toISOString();
-  const dayAgo = new Date(now - (24 * 60 * 60 * 1000)).toISOString();
+export async function submitPollDraft({
+  creatorId,
+  slug,
+  title,
+  description,
+  category,
+  options,
+  allowMultipleAnswers = false,
+  bypassRateLimit = false
+}) {
+  if (!bypassRateLimit) {
+    const now = Date.now();
+    const tenMinutesAgo = new Date(now - (10 * 60 * 1000)).toISOString();
+    const dayAgo = new Date(now - (24 * 60 * 60 * 1000)).toISOString();
 
-  const [recentPolls, dailyPolls] = await Promise.all([
-    supabaseRequest(
-      `/polls?select=id&creator_id=eq.${encodeFilterValue(creatorId)}&created_at=gt.${encodeFilterValue(tenMinutesAgo)}`
-    ),
-    supabaseRequest(
-      `/polls?select=id&creator_id=eq.${encodeFilterValue(creatorId)}&created_at=gt.${encodeFilterValue(dayAgo)}`
-    )
-  ]);
+    const [recentPolls, dailyPolls] = await Promise.all([
+      supabaseRequest(
+        `/polls?select=id&creator_id=eq.${encodeFilterValue(creatorId)}&created_at=gt.${encodeFilterValue(tenMinutesAgo)}`
+      ),
+      supabaseRequest(
+        `/polls?select=id&creator_id=eq.${encodeFilterValue(creatorId)}&created_at=gt.${encodeFilterValue(dayAgo)}`
+      )
+    ]);
 
-  if ((recentPolls || []).length >= 3 || (dailyPolls || []).length >= 10) {
-    const error = new Error("Too many poll submissions recently");
-    error.code = "RATE_LIMITED";
-    throw error;
+    if ((recentPolls || []).length >= 3 || (dailyPolls || []).length >= 10) {
+      const error = new Error("Too many poll submissions recently");
+      error.code = "RATE_LIMITED";
+      throw error;
+    }
   }
 
   const rows = await supabaseRequest("/polls?select=id,slug,status,created_at", {
