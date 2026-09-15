@@ -11,8 +11,8 @@ function validateBeforeSubmit({ title, description, options }) {
   const cleanDescription = description.trim();
   const cleanOptions = options.map((option) => option.trim());
 
-  if (cleanTitle.length < 10 || cleanTitle.length > 180) {
-    return "The poll question must be between 10 and 180 characters.";
+  if (cleanTitle.length < 10 || cleanTitle.length > 90) {
+    return "The poll question must be between 10 and 90 characters.";
   }
 
   if (/[<>]/.test(cleanTitle)) {
@@ -168,18 +168,22 @@ export function SubmitPollForm() {
 
     <p className="form-intro">Keep the question clear and easy to understand. Add context only when it helps. Submissions are reviewed before they appear on the public poll board.</p>
 
-    <label className="field">
+    <label className={title.length > 90 ? "field field-error" : "field"}>
       <span>Poll question</span>
       <input
         type="text"
         minLength="10"
         maxLength="180"
         required
+        aria-invalid={title.length > 90}
         value={title}
         onChange={(event) => setTitle(event.target.value)}
         placeholder="Should WoW Forever…?"
       />
-      <small>{title.length}/180</small>
+      <small className={title.length > 90 ? "character-count over-limit" : "character-count"}>{title.length}/90</small>
+      {title.length > 90 && <span className="field-warning">
+        Title is {title.length - 90} character{title.length - 90 === 1 ? "" : "s"} too long. Shorten it so it fits poll cards and share previews.
+      </span>}
     </label>
 
     <label className="field">
