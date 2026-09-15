@@ -297,6 +297,7 @@ function PollAdminCard({ poll, actions, busy, onAction, onEdit, trashLabel = "" 
 }
 
 function AdminSection({
+  id,
   kicker,
   title,
   polls,
@@ -329,7 +330,7 @@ function AdminSection({
     ? [{ value: "expiring", label: "Expiring soon" }, ...SORT_OPTIONS]
     : SORT_OPTIONS;
 
-  return <section className={open ? "admin-section-block open" : "admin-section-block collapsed"}>
+  return <section id={id} className={open ? "admin-section-block open" : "admin-section-block collapsed"}>
     <button
       className="admin-section-toggle"
       type="button"
@@ -554,6 +555,7 @@ export function AdminPollsPanel() {
 
     <AdminSection
       {...commonProps}
+      id="pending-submissions"
       kicker="Admin moderation"
       title="Pending submissions"
       polls={queues.submissions}
