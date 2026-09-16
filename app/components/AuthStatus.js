@@ -76,8 +76,8 @@ export function AuthStatus() {
     return <a className="login-placeholder auth-login" href="/api/auth/login/battlenet">Battle.net login</a>;
   }
 
-  const hasClassicProfile = Boolean(auth.wowProfile?.hasClassicProfile);
-  const verifiedLabel = hasClassicProfile ? "Classic profile found" : "Profile check pending";
+  const hasWowProfile = Boolean(auth.wowProfile?.hasAnyWowProfile);
+  const verifiedLabel = hasWowProfile ? "WoW profile found" : "Battle.net verified";
 
   return <div className="auth-status" aria-label="Battle.net account status">
     {auth.admin && <>
