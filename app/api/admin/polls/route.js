@@ -73,6 +73,9 @@ export async function POST(request) {
       const title = typeof body?.title === "string" ? body.title.trim() : "";
       const rationale = typeof body?.rationale === "string" ? body.rationale.trim() : "";
       const allowMultipleAnswers = body?.allowMultipleAnswers === true;
+      const options = Array.isArray(body?.options)
+        ? body.options.map((option) => typeof option === "string" ? option.trim() : "")
+        : [];
 
       if (title.length < 10 || title.length > 90 || /[<>]/.test(title)) {
         return json({ ok: false, error: "invalid_title" }, 400);
@@ -82,10 +85,23 @@ export async function POST(request) {
         return json({ ok: false, error: "invalid_rationale" }, 400);
       }
 
+      if (options.length < 2 || options.length > 20) {
+        return json({ ok: false, error: "invalid_options" }, 400);
+      }
+
+      if (options.some((option) => option.length < 1 || option.length > 100 || /[<>]/.test(option))) {
+        return json({ ok: false, error: "invalid_options" }, 400);
+      }
+
+      if (new Set(options.map((option) => option.toLowerCase())).size !== options.length) {
+        return json({ ok: false, error: "duplicate_options" }, 400);
+      }
+
       const poll = await editPollAdmin({
         pollId,
         title,
         rationale,
+        options,
         allowMultipleAnswers,
         editorBattleNetAccountId: admin.session?.user?.battlenetAccountId || null,
         editorBattleTag: admin.session?.user?.battletag || (admin.method === "bearer" ? "Admin API token" : "Admin")
@@ -108,8 +124,14 @@ export async function POST(request) {
             ? "poll_state_conflict"
             : error.code === "23514" && error.message?.includes("Voting mode cannot be changed after votes")
               ? "voting_mode_locked"
-              : error.code === "23514"
-                ? "invalid_poll_copy"
+              : error.code === "23514" && error.message?.includes("Answer count cannot be changed after votes")
+                ? "answer_count_locked"
+                : error.code === "23514" && error.message?.includes("Poll options must be unique")
+                  ? "duplicate_options"
+                  : error.code === "23514" && error.message?.includes("option")
+                    ? "invalid_options"
+                    : error.code === "23514"
+                      ? "invalid_poll_copy"
                 : "admin_action_failed"
     }, error.status || 500);
   }
