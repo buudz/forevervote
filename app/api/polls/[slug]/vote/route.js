@@ -14,9 +14,6 @@ export async function POST(request, context) {
     return jsonError("login_required", 401);
   }
 
-  if (!session?.wowProfile?.hasClassicProfile) {
-    return jsonError("classic_profile_required", 403);
-  }
 
   const { slug } = await context.params;
   const body = await request.json().catch(() => null);
