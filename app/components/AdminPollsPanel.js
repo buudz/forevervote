@@ -122,6 +122,7 @@ function PollAdminCard({ poll, actions, busy, onAction, onEdit, trashLabel = "" 
   const [title, setTitle] = useState(poll.title);
   const [rationale, setRationale] = useState(poll.rationale || "");
   const [allowMultipleAnswers, setAllowMultipleAnswers] = useState(Boolean(poll.allowMultipleAnswers));
+  const [options, setOptions] = useState((poll.options || []).map((option) => option.text));
   const [historyOpen, setHistoryOpen] = useState(false);
   const [history, setHistory] = useState(null);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -131,7 +132,8 @@ function PollAdminCard({ poll, actions, busy, onAction, onEdit, trashLabel = "" 
     setTitle(poll.title);
     setRationale(poll.rationale || "");
     setAllowMultipleAnswers(Boolean(poll.allowMultipleAnswers));
-  }, [poll.title, poll.rationale, poll.allowMultipleAnswers]);
+    setOptions((poll.options || []).map((option) => option.text));
+  }, [poll.title, poll.rationale, poll.allowMultipleAnswers, poll.options]);
 
   const meta = [
     poll.creatorBattleTag,
@@ -165,7 +167,7 @@ function PollAdminCard({ poll, actions, busy, onAction, onEdit, trashLabel = "" 
 
   async function saveEdit(event) {
     event.preventDefault();
-    const saved = await onEdit(poll.id, title, rationale, allowMultipleAnswers);
+    const saved = await onEdit(poll.id, title, rationale, allowMultipleAnswers, options);
     if (saved) {
       setEditing(false);
       setHistory(null);
@@ -253,6 +255,49 @@ function PollAdminCard({ poll, actions, busy, onAction, onEdit, trashLabel = "" 
         <small>{rationale.length}/1500</small>
       </label>
 
+      <fieldset className="admin-answer-editor">
+        <legend>Answer options</legend>
+        <div className="admin-answer-list">
+          {options.map((option, index) => <div className="admin-answer-row" key={index}>
+            <label>
+              <span>Answer {index + 1}</span>
+              <input
+                type="text"
+                maxLength={100}
+                required
+                value={option}
+                onChange={(event) => setOptions((current) => current.map((value, optionIndex) =>
+                  optionIndex === index ? event.target.value : value
+                ))}
+              />
+              <small>{option.length}/100</small>
+            </label>
+            {Number(poll.totalVotes || 0) === 0 && options.length > 2 && <button
+              className="button secondary danger-action admin-answer-remove"
+              type="button"
+              onClick={() => setOptions((current) => current.filter((_, optionIndex) => optionIndex !== index))}
+            >
+              Remove
+            </button>}
+          </div>)}
+        </div>
+
+        {Number(poll.totalVotes || 0) === 0
+          ? <div className="admin-answer-editor-footer">
+              <small>You can add, remove, or rewrite answers before voting starts.</small>
+              {options.length < 20 && <button
+                className="button secondary"
+                type="button"
+                onClick={() => setOptions((current) => [...current, ""])}
+              >
+                Add answer
+              </button>}
+            </div>
+          : <small className="admin-answer-lock-note">
+              This poll already has votes. Answer wording can still be corrected and is recorded in edit history, but answers cannot be added, removed, or reordered.
+            </small>}
+      </fieldset>
+
       <fieldset className="admin-voting-mode-editor">
         <legend>Voting mode</legend>
         <label className="multi-vote-toggle">
@@ -277,7 +322,7 @@ function PollAdminCard({ poll, actions, busy, onAction, onEdit, trashLabel = "" 
         <button
           className="button primary"
           type="submit"
-          disabled={Boolean(busy) || title.trim().length < 10}
+          disabled={Boolean(busy) || title.trim().length < 10 || options.length < 2 || options.some((option) => option.trim().length < 1)}
         >
           {busy === `${poll.id}:edit` ? "Saving edit…" : "Save audited edit"}
         </button>
@@ -452,7 +497,7 @@ export function AdminPollsPanel() {
     });
   }, []);
 
-  async function editPoll(pollId, title, rationale, allowMultipleAnswers) {
+  async function editPoll(pollId, title, rationale, allowMultipleAnswers, options) {
     setBusy(`${pollId}:edit`);
     setMessage("");
 
@@ -460,7 +505,7 @@ export function AdminPollsPanel() {
       const response = await fetch("/api/admin/polls", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pollId, action: "edit", title, rationale, allowMultipleAnswers })
+        body: JSON.stringify({ pollId, action: "edit", title, rationale, allowMultipleAnswers, options })
       });
       const data = await response.json().catch(() => ({}));
 
@@ -472,7 +517,13 @@ export function AdminPollsPanel() {
               ? "Rationale must be 1500 characters or less and cannot contain angle brackets."
               : data.error === "voting_mode_locked"
                 ? "Voting mode is locked because this poll already has votes."
-                : "Could not save that poll edit."
+                : data.error === "answer_count_locked"
+                  ? "Answer count is locked because this poll already has votes. You can still correct the wording of existing answers."
+                  : data.error === "duplicate_options"
+                    ? "Each answer option must be unique."
+                    : data.error === "invalid_options"
+                      ? "Polls need 2–20 unique answers, each 1–100 characters."
+                      : "Could not save that poll edit."
         );
       }
 
