@@ -14,6 +14,8 @@ export async function GET(request) {
 
   return NextResponse.json({
     authenticated: true,
+    eligible: Boolean(session.user?.battlenetAccountId),
+    eligibilityBasis: "battlenet_oauth",
     admin: await isAdminSession(session),
     user: session.user,
     wowProfile: session.wowProfile,
