@@ -1,7 +1,7 @@
 import { encodeFilterValue, supabaseRequest } from "./rest";
 
-function isClassicVerified(session) {
-  return Boolean(session?.wowProfile?.hasClassicProfile);
+function isBattleNetVerified(session) {
+  return Boolean(session?.user?.battlenetAccountId);
 }
 
 export async function getUserByBattleNetAccountId(battlenetAccountId) {
@@ -19,7 +19,7 @@ export async function getUserByBattleNetAccountId(battlenetAccountId) {
 export async function ensureUserFromSession(session) {
   const battlenetAccountId = session?.user?.battlenetAccountId;
   const battletag = session?.user?.battletag || "Unknown BattleTag";
-  const wowVerified = isClassicVerified(session);
+  const wowVerified = isBattleNetVerified(session);
 
   if (!battlenetAccountId) {
     throw new Error("No Battle.net account id in session");
