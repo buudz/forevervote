@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { pollCategories } from "../data/polls";
 
 const categories = pollCategories.filter((category) => category !== "All");
@@ -420,6 +420,7 @@ export function ProfileDashboard() {
   const [state, setState] = useState({ loading: true, data: null, error: "" });
   const [editingPoll, setEditingPoll] = useState(null);
   const [contextPoll, setContextPoll] = useState(null);
+  const contextPanelRef = useRef(null);
 
   async function load() {
     const response = await fetch("/api/profile", { cache: "no-store" });
@@ -440,6 +441,24 @@ export function ProfileDashboard() {
   useEffect(() => {
     load().catch((error) => setState({ loading: false, data: null, error: error.message }));
   }, []);
+
+  useEffect(() => {
+    if (!contextPoll || !contextPanelRef.current) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      contextPanelRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+
+      const textarea = contextPanelRef.current?.querySelector("textarea");
+      window.setTimeout(() => textarea?.focus(), 350);
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [contextPoll]);
 
   if (state.loading) {
     return <div className="profile-loading">Loading your profile…</div>;
@@ -514,7 +533,9 @@ export function ProfileDashboard() {
     </section>
 
     {editingPoll && <EditPollPanel poll={editingPoll} onClose={() => setEditingPoll(null)} onSaved={load} />}
-    {contextPoll && <ContextUpdatePanel poll={contextPoll} onClose={() => setContextPoll(null)} onSaved={load} />}
+    {contextPoll && <div ref={contextPanelRef} className="profile-context-update-anchor">
+      <ContextUpdatePanel poll={contextPoll} onClose={() => setContextPoll(null)} onSaved={load} />
+    </div>}
 
     <PollSection
       title="Submitted polls"
@@ -530,8 +551,14 @@ export function ProfileDashboard() {
       description="Your live community polls"
       polls={dashboard.approved || []}
       emptyText="None of your polls are live yet."
-      onEdit={setEditingPoll}
-      onContextUpdate={setContextPoll}
+      onEdit={(poll) => {
+        setContextPoll(null);
+        setEditingPoll(poll);
+      }}
+      onContextUpdate={(poll) => {
+        setEditingPoll(null);
+        setContextPoll(poll);
+      }}
       defaultOpen
     />
 
