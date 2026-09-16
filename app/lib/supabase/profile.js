@@ -5,6 +5,17 @@ function sortByPosition(left, right) {
   return Number(left.position || 0) - Number(right.position || 0);
 }
 
+function buildContextUpdates(rows) {
+  return (Array.isArray(rows) ? rows : [])
+    .map((row) => ({
+      id: row.id,
+      body: row.body || "",
+      createdAt: row.created_at,
+      snapshot: row.vote_snapshot && typeof row.vote_snapshot === "object" ? row.vote_snapshot : {}
+    }))
+    .sort((left, right) => new Date(right.createdAt || 0) - new Date(left.createdAt || 0));
+}
+
 function buildReputationProgress(row = {}) {
   const totalPoints = Number(row.total_points || 0);
   const tiers = [
@@ -60,6 +71,7 @@ function buildProfilePoll(row, selectedOptionIds = []) {
     totalVoters: voterCount,
     totalSelections: votes.length,
     canEdit: ["draft", "open"].includes(row.status) && votes.length === 0,
+    contextUpdates: buildContextUpdates(row.poll_context_updates),
     options,
     selectedOptionIds,
     selectedOptionTexts: options
@@ -86,7 +98,7 @@ export async function getUserProfileDashboard(session) {
 
   const [ownRows, voteRows, reputationRows] = await Promise.all([
     supabaseRequest(
-      `/polls?select=id,slug,title,description,category,status,created_at,published_at,updated_at,trash_reason,allow_multiple_answers,poll_options(id,text,position,is_neutral),votes(user_id)&creator_id=eq.${encodeFilterValue(user.id)}&order=created_at.desc`
+      `/polls?select=id,slug,title,description,category,status,created_at,published_at,updated_at,trash_reason,allow_multiple_answers,poll_options(id,text,position,is_neutral),poll_context_updates(id,body,created_at,vote_snapshot),votes(user_id)&creator_id=eq.${encodeFilterValue(user.id)}&order=created_at.desc`
     ),
     supabaseRequest(
       `/votes?select=poll_id,option_id&user_id=eq.${encodeFilterValue(user.id)}`
@@ -115,7 +127,7 @@ export async function getUserProfileDashboard(session) {
 
   if (votedPollIds.length) {
     const pollRows = await supabaseRequest(
-      `/polls?select=id,slug,title,description,category,status,created_at,published_at,updated_at,trash_reason,allow_multiple_answers,poll_options(id,text,position,is_neutral),votes(user_id)&id=in.(${votedPollIds.join(",")})&order=updated_at.desc`
+      `/polls?select=id,slug,title,description,category,status,created_at,published_at,updated_at,trash_reason,allow_multiple_answers,poll_options(id,text,position,is_neutral),poll_context_updates(id,body,created_at,vote_snapshot),votes(user_id)&id=in.(${votedPollIds.join(",")})&order=updated_at.desc`
     );
 
     voted = (pollRows || []).map((row) => buildProfilePoll(row, selectedByPoll.get(row.id) || []));
@@ -151,4 +163,30 @@ export async function editOwnPoll({
   });
 
   return rows?.[0] || null;
+}
+
+
+export async function addOwnPollContextUpdate({ session, pollId, body }) {
+  const user = await ensureUserFromSession(session);
+
+  const rows = await supabaseRequest("/rpc/add_poll_context_update", {
+    method: "POST",
+    body: JSON.stringify({
+      p_poll_id: pollId,
+      p_user_id: user.id,
+      p_body: body
+    })
+  });
+
+  const row = rows?.[0];
+  if (!row) {
+    return null;
+  }
+
+  return {
+    id: row.update_id,
+    body: row.update_body,
+    createdAt: row.update_created_at,
+    snapshot: row.update_vote_snapshot || {}
+  };
 }
