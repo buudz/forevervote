@@ -397,7 +397,7 @@ function ContextUpdatePanel({ poll, onClose, onSaved }) {
           required
           value={body}
           onChange={(event) => setBody(event.target.value)}
-          placeholder="Example: For this question, compare the difficulty specifically with Classic Era."
+          placeholder="Add context that helps voters understand how the question should be interpreted now."
         />
         <small>{body.length}/500</small>
       </label>
