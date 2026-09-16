@@ -34,6 +34,7 @@ function searchablePollText(poll) {
     poll.category,
     statusLabel(poll),
     poll.rationale,
+    ...(poll.contextUpdates || []).map((update) => update.body),
     ...(poll.options || []).map((option) => option.text),
     ...(poll.selectedOptionTexts || [])
   ].filter(Boolean).join(" ").toLocaleLowerCase();
@@ -61,7 +62,7 @@ function sortProfilePolls(polls, sort) {
   return list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 }
 
-function PollRow({ poll, kind, onEdit }) {
+function PollRow({ poll, kind, onEdit, onContextUpdate }) {
   const linkable = poll.status === "open";
   const votes = Number(poll.totalVoters || 0);
 
@@ -81,9 +82,19 @@ function PollRow({ poll, kind, onEdit }) {
     </p>}
 
     <div className="profile-poll-footer">
-      <span>{votes} voter{votes === 1 ? "" : "s"}</span>
+      <span>
+        {votes} voter{votes === 1 ? "" : "s"}
+        {(poll.contextUpdates || []).length > 0 && <> · {(poll.contextUpdates || []).length} creator update{poll.contextUpdates.length === 1 ? "" : "s"}</>}
+      </span>
       <div>
         {linkable && <a className="profile-text-link" href={`/polls/${poll.slug}`}>Open poll ↗</a>}
+        {linkable && onContextUpdate && <button
+          className="button secondary profile-edit-button"
+          type="button"
+          onClick={() => onContextUpdate(poll)}
+        >
+          Add context update
+        </button>}
         {poll.canEdit && onEdit && <button className="button secondary profile-edit-button" type="button" onClick={() => onEdit(poll)}>Edit poll</button>}
       </div>
     </div>
@@ -97,6 +108,7 @@ function PollSection({
   kind,
   emptyText,
   onEdit,
+  onContextUpdate,
   defaultOpen = true
 }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -161,7 +173,13 @@ function PollSection({
             {filteredPolls.length === 0
               ? <div className="profile-empty compact">No matching polls.</div>
               : <div className="profile-poll-list">
-                  {filteredPolls.map((poll) => <PollRow key={poll.id} poll={poll} kind={kind} onEdit={onEdit} />)}
+                  {filteredPolls.map((poll) => <PollRow
+                    key={poll.id}
+                    poll={poll}
+                    kind={kind}
+                    onEdit={onEdit}
+                    onContextUpdate={onContextUpdate}
+                  />)}
                 </div>}
           </>}
     </div>}
@@ -313,9 +331,95 @@ function EditPollPanel({ poll, onClose, onSaved }) {
   </div>;
 }
 
+function ContextUpdatePanel({ poll, onClose, onSaved }) {
+  const [body, setBody] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
+
+  async function submit(event) {
+    event.preventDefault();
+    setMessage("");
+
+    const cleanBody = body.trim();
+    if (cleanBody.length < 3 || cleanBody.length > 500) {
+      setMessage("Context updates must be between 3 and 500 characters.");
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      const response = await fetch(`/api/profile/polls/${encodeURIComponent(poll.id)}/context`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ body: cleanBody })
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.message || "Could not add the context update.");
+      }
+
+      await onSaved();
+      onClose();
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return <div className="profile-edit-panel profile-context-update-panel">
+    <div className="profile-edit-heading">
+      <div>
+        <p className="kicker">Creator update</p>
+        <h2>Add context without rewriting the poll</h2>
+      </div>
+      <button className="button secondary" type="button" onClick={onClose}>Close</button>
+    </div>
+
+    <p className="profile-edit-note">
+      Add a short update when new information changes how voters should read the question. The update is timestamped, cannot be edited afterward, and permanently records the poll results as they looked at that exact moment.
+    </p>
+
+    <div className="profile-context-poll-reference">
+      <small>Poll</small>
+      <strong>{poll.title}</strong>
+    </div>
+
+    <form className="poll-form" onSubmit={submit}>
+      <label className="field">
+        <span>Context update</span>
+        <textarea
+          rows="4"
+          minLength="3"
+          maxLength="500"
+          required
+          value={body}
+          onChange={(event) => setBody(event.target.value)}
+          placeholder="Example: For this question, compare the difficulty specifically with Classic Era."
+        />
+        <small>{body.length}/500</small>
+      </label>
+
+      <div className="profile-context-warning">
+        <strong>Append-only</strong>
+        <span>Posting this will freeze the current voter count and answer percentages alongside the note. It cannot be silently rewritten later.</span>
+      </div>
+
+      <button className="button primary submit-button" type="submit" disabled={saving || body.trim().length < 3}>
+        {saving ? "Posting update…" : "Post context update"}
+      </button>
+
+      {message && <p className="form-message" role="status">{message}</p>}
+    </form>
+  </div>;
+}
+
 export function ProfileDashboard() {
   const [state, setState] = useState({ loading: true, data: null, error: "" });
   const [editingPoll, setEditingPoll] = useState(null);
+  const [contextPoll, setContextPoll] = useState(null);
 
   async function load() {
     const response = await fetch("/api/profile", { cache: "no-store" });
@@ -410,6 +514,7 @@ export function ProfileDashboard() {
     </section>
 
     {editingPoll && <EditPollPanel poll={editingPoll} onClose={() => setEditingPoll(null)} onSaved={load} />}
+    {contextPoll && <ContextUpdatePanel poll={contextPoll} onClose={() => setContextPoll(null)} onSaved={load} />}
 
     <PollSection
       title="Submitted polls"
@@ -426,6 +531,7 @@ export function ProfileDashboard() {
       polls={dashboard.approved || []}
       emptyText="None of your polls are live yet."
       onEdit={setEditingPoll}
+      onContextUpdate={setContextPoll}
       defaultOpen
     />
 
