@@ -143,7 +143,7 @@ export async function fetchWowProfileChecks(accessToken) {
     region,
     locale,
     checks,
-    hasAnyWowProfile: checks.some((check) => check.ok && check.characterCount > 0),
-    hasClassicProfile: checks.some((check) => check.ok && check.namespace !== `profile-${region}` && check.characterCount > 0)
+    hasAnyWowProfile: checks.some((check) => check.ok && (check.wowAccountCount > 0 || check.characterCount > 0)),
+    hasClassicProfile: checks.some((check) => check.ok && check.namespace !== `profile-${region}` && (check.wowAccountCount > 0 || check.characterCount > 0))
   };
 }
