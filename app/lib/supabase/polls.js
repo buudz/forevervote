@@ -16,6 +16,36 @@ function sortByPosition(left, right) {
   return Number(left.position || 0) - Number(right.position || 0);
 }
 
+function buildContextUpdates(rows) {
+  return (Array.isArray(rows) ? rows : [])
+    .map((row) => {
+      const snapshot = row.vote_snapshot && typeof row.vote_snapshot === "object"
+        ? row.vote_snapshot
+        : {};
+      const options = Array.isArray(snapshot.options)
+        ? [...snapshot.options].sort(sortByPosition).map((option) => ({
+            optionId: option.optionId || option.option_id || null,
+            text: option.text || "",
+            position: Number(option.position || 0),
+            voteCount: Number(option.voteCount ?? option.vote_count ?? 0)
+          }))
+        : [];
+
+      return {
+        id: row.id,
+        body: row.body || "",
+        createdAt: row.created_at,
+        snapshot: {
+          totalVoters: Number(snapshot.totalVoters ?? snapshot.total_voters ?? 0),
+          totalSelections: Number(snapshot.totalSelections ?? snapshot.total_selections ?? 0),
+          allowMultipleAnswers: Boolean(snapshot.allowMultipleAnswers ?? snapshot.allow_multiple_answers),
+          options
+        }
+      };
+    })
+    .sort((left, right) => new Date(right.createdAt || 0) - new Date(left.createdAt || 0));
+}
+
 function sortByDisplayOrder(left, right) {
   const leftOrder = Number.isFinite(Number(left.displayOrder)) ? Number(left.displayOrder) : Number.MAX_SAFE_INTEGER;
   const rightOrder = Number.isFinite(Number(right.displayOrder)) ? Number(right.displayOrder) : Number.MAX_SAFE_INTEGER;
@@ -107,6 +137,7 @@ function buildPoll(row, userVotesByPollId = new Map(), editCountsByPollId = new 
     totalVoters,
     totalSelections,
     editCount: editCountsByPollId.get(row.id) || 0,
+    contextUpdates: buildContextUpdates(row.poll_context_updates),
     userVoteOptionIds,
     userVoteOptionId: userVoteOptionIds[0] || null
   };
@@ -142,7 +173,7 @@ export async function getOpenPollsForSession(session, options = {}) {
   }
 
   const rows = await supabaseRequest(
-    "/polls?select=id,slug,title,description,category,status,display_order,created_at,published_at,updated_at,allow_custom_answers,allow_multiple_answers,poll_options(id,text,position,is_neutral),votes(user_id,option_id)&status=eq.open&order=created_at.asc"
+    "/polls?select=id,slug,title,description,category,status,display_order,created_at,published_at,updated_at,allow_custom_answers,allow_multiple_answers,poll_options(id,text,position,is_neutral),poll_context_updates(id,body,created_at,vote_snapshot),votes(user_id,option_id)&status=eq.open&order=created_at.asc"
   );
 
   const pollIds = rows.map((row) => row.id).filter(Boolean);
@@ -185,7 +216,7 @@ export async function getOpenPollForSession(session, slug) {
   }
 
   const rows = await supabaseRequest(
-    `/polls?select=id,slug,title,description,category,status,display_order,created_at,published_at,updated_at,allow_custom_answers,allow_multiple_answers,poll_options(id,text,position,is_neutral),votes(user_id,option_id)&slug=eq.${encodeFilterValue(slug)}&status=eq.open&limit=1`
+    `/polls?select=id,slug,title,description,category,status,display_order,created_at,published_at,updated_at,allow_custom_answers,allow_multiple_answers,poll_options(id,text,position,is_neutral),poll_context_updates(id,body,created_at,vote_snapshot),votes(user_id,option_id)&slug=eq.${encodeFilterValue(slug)}&status=eq.open&limit=1`
   );
   const row = rows?.[0];
 
