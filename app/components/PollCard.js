@@ -3,7 +3,7 @@ function optionPercent(option, totalVoters) {
     return 0;
   }
 
-  return Math.round((option.voteCount / totalVoters) * 100);
+  return Math.round((Number(option.voteCount || 0) / totalVoters) * 100);
 }
 
 function selectedOptionIds(poll) {
@@ -12,6 +12,71 @@ function selectedOptionIds(poll) {
   }
 
   return poll.userVoteOptionId ? [poll.userVoteOptionId] : [];
+}
+
+function formatUpdateDate(value) {
+  if (!value) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(value));
+}
+
+function CreatorContextUpdates({ updates = [] }) {
+  if (!updates.length) {
+    return null;
+  }
+
+  return <details className="poll-context-updates">
+    <summary>
+      <span>
+        <strong>Creator update{updates.length === 1 ? "" : "s"}</strong>
+        <small>{updates.length} context note{updates.length === 1 ? "" : "s"}</small>
+      </span>
+      <span className="poll-context-toggle">Context + vote snapshots</span>
+    </summary>
+
+    <div className="poll-context-update-list">
+      {updates.map((update) => {
+        const snapshot = update.snapshot || {};
+        const totalVoters = Number(snapshot.totalVoters || 0);
+        const snapshotOptions = Array.isArray(snapshot.options) ? snapshot.options : [];
+
+        return <article className="poll-context-update" key={update.id}>
+          <div className="poll-context-update-meta">
+            <strong>Creator update</strong>
+            <time dateTime={update.createdAt}>{formatUpdateDate(update.createdAt)}</time>
+          </div>
+
+          <p>{update.body}</p>
+
+          <div className="poll-context-snapshot">
+            <div className="poll-context-snapshot-heading">
+              <span>Vote snapshot when this was added</span>
+              <small>{totalVoters} voter{totalVoters === 1 ? "" : "s"}</small>
+            </div>
+
+            <div className="poll-context-snapshot-options">
+              {snapshotOptions.map((option, index) => <span key={option.optionId || index}>
+                <strong>{option.text}</strong>
+                <small>{optionPercent(option, totalVoters)}%</small>
+              </span>)}
+            </div>
+
+            {snapshot.allowMultipleAnswers && <small className="poll-context-snapshot-note">
+              Multiple answers were enabled, so percentages may add up to more than 100%.
+            </small>}
+          </div>
+        </article>;
+      })}
+    </div>
+  </details>;
 }
 
 export function PollCard({
@@ -58,6 +123,7 @@ export function PollCard({
       <a className="poll-title-link" href={`/polls/${poll.slug || poll.id}`}>{poll.title}</a>
     </h3>}
     {!standalone && context && <p className="context">{context}</p>}
+    <CreatorContextUpdates updates={poll.contextUpdates || []} />
     {poll.allowMultipleAnswers && <p className="multi-answer-note">Multiple answers allowed — percentages can add up to more than 100%.</p>}
     <div className="option-preview" aria-label="Poll options">
       {poll.options.map((option) => {
