@@ -228,7 +228,7 @@ function PollAdminCard({ poll, actions, busy, onAction, onEdit, trashLabel = "" 
     {editing && <form className="admin-edit-form" onSubmit={saveEdit}>
       <div className="admin-edit-trust-note">
         <strong>Audited edit</strong>
-        <span>Every title, rationale, or voting-mode change is permanently recorded and visible in the public edit history.</span>
+        <span>Every title, rationale, answer, or voting-mode change is permanently recorded and visible in the public edit history.</span>
       </div>
 
       <label>
