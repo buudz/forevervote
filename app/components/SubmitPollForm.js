@@ -116,9 +116,7 @@ export function SubmitPollForm() {
         throw new Error(data.message || (
           data.error === "login_required"
             ? "Login with Battle.net before submitting a poll."
-            : data.error === "classic_profile_required"
-              ? "A Classic WoW profile is required to submit polls."
-              : "Could not submit the poll. Check the fields and try again."
+            : "Could not submit the poll. Check the fields and try again."
         ));
       }
 
@@ -143,17 +141,9 @@ export function SubmitPollForm() {
   if (!auth.authenticated) {
     return <div className="submit-panel submit-gate">
       <h2>Login required</h2>
-      <p>Poll submissions are limited to Battle.net accounts with a verified Classic WoW profile.</p>
+      <p>Poll submissions are limited to signed-in Battle.net accounts.</p>
       <a className="button primary" href="/api/auth/login/battlenet">Login with Battle.net</a>
       <small>After login, return to this page to submit your poll.</small>
-    </div>;
-  }
-
-  if (!auth.wowProfile?.hasClassicProfile) {
-    return <div className="submit-panel submit-gate">
-      <h2>Classic profile required</h2>
-      <p>Your Battle.net login worked, but ForeverVote could not verify a Classic WoW profile for this account.</p>
-      <a className="button secondary" href="/">Back to polls</a>
     </div>;
   }
 
