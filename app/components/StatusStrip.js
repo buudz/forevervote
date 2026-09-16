@@ -1,5 +1,5 @@
 const statusItems = [
-  { number: "01", title: "Login with Battle.net", detail: "Verify a real WoW account before voting" },
+  { number: "01", title: "Login with Battle.net", detail: "Use your Battle.net identity before voting" },
   { number: "02", title: "Account-backed voting", detail: "One verified account; some polls allow multiple answers" },
   { number: "03", title: "Change your mind", detail: "Add, remove, or switch selections whenever the poll allows it" }
 ];
