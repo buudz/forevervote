@@ -340,16 +340,18 @@ export async function editPollAdmin({
   pollId,
   title,
   rationale,
+  options,
   allowMultipleAnswers,
   editorBattleNetAccountId,
   editorBattleTag
 }) {
-  const rows = await supabaseRequest("/rpc/admin_edit_poll", {
+  const rows = await supabaseRequest("/rpc/admin_edit_poll_v2", {
     method: "POST",
     body: JSON.stringify({
       p_poll_id: pollId,
       p_title: title,
       p_description: rationale,
+      p_options: options,
       p_allow_multiple_answers: Boolean(allowMultipleAnswers),
       p_editor_battlenet_account_id: editorBattleNetAccountId || null,
       p_editor_battletag: editorBattleTag || "Admin"
