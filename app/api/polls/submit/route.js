@@ -175,9 +175,6 @@ export async function POST(request) {
     return json({ ok: false, error: "login_required" }, 401);
   }
 
-  if (!session?.wowProfile?.hasClassicProfile) {
-    return json({ ok: false, error: "classic_profile_required" }, 403);
-  }
 
   const rawBody = await request.text();
   if (rawBody.length > MAX_BODY_LENGTH) {
