@@ -106,7 +106,7 @@ export function PollsSection({ initialPolls = fallbackPolls, initialDatabaseRead
   const [votingOptionId, setVotingOptionId] = useState(null);
 
   const authReady = !auth.loading;
-  const canVote = Boolean(auth.authenticated && auth.wowProfile?.hasClassicProfile && pollState.databaseReady);
+  const canVote = Boolean(auth.authenticated && pollState.databaseReady);
 
   async function loadPolls(nextSort = sort, nextVoteFilter = voteFilter, active = true) {
     const params = new URLSearchParams({ sort: nextSort, filter: nextVoteFilter || "all" });
@@ -264,7 +264,7 @@ export function PollsSection({ initialPolls = fallbackPolls, initialDatabaseRead
 
   async function submitVote(pollSlug, optionId) {
     if (!canVote) {
-      setStatusMessage(auth.authenticated ? "A Classic WoW profile is required to vote." : "Login with Battle.net to vote.");
+      setStatusMessage("Login with Battle.net to vote.");
       return;
     }
 
@@ -296,9 +296,7 @@ export function PollsSection({ initialPolls = fallbackPolls, initialDatabaseRead
           : (currentPoll?.allowMultipleAnswers ? "Selection saved." : "Vote saved.")
       );
     } catch (error) {
-      setStatusMessage(error.message === "classic_profile_required"
-        ? "A Classic WoW profile is required to vote."
-        : "Vote failed. Try again in a moment.");
+      setStatusMessage("Vote failed. Try again in a moment.");
     } finally {
       setVotingOptionId(null);
     }
