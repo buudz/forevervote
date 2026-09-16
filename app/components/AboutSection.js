@@ -7,7 +7,7 @@ export function AboutSection() {
       </div>
       <div className="about-panel">
         <p>ForeverVote is an independent, community-run fan project built to collect structured opinions about World of Warcraft and World of Warcraft: Forever.</p>
-        <p>Voting uses Battle.net sign-in and a verified Classic WoW profile. Poll creators choose whether a poll accepts one answer or multiple answers. Each eligible Battle.net identity can only select each option once, and selections can be changed while the poll is open.</p>
+        <p>Voting uses Battle.net sign-in to keep each voter tied to a real Battle.net identity. Poll creators choose whether a poll accepts one answer or multiple answers. Each eligible Battle.net identity can only select each option once, and selections can be changed while the poll is open.</p>
         <p>Results are community feedback only. They are not scientific polling, they do not represent every WoW player, and they have no official decision-making authority.</p>
         <div className="legal-callout">
           <strong>Blizzard disclaimer</strong>
