@@ -6,7 +6,7 @@ export function LaunchHero() {
     <div className="wrap hero-grid hero-grid-single">
       <div className="hero-copy">
         <p className="kicker">World of Warcraft: Forever · Community Voting Hub</p>
-        <h1 id="launch-title">The WoW ForeverVote Community Tool has finally launched!</h1>
+        <h1 id="launch-title">The ForeverVote WoW Community Tool has finally launched!</h1>
         <p className="intro">We are super happy to be releasing this website to you all. Hope you find many great polls to submit and vote on.</p>
         <p className="intro">Discord server is coming soon!</p>
         <div className="hero-actions">
