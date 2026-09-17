@@ -50,7 +50,6 @@ function CreatorContextUpdates({ updates = [] }) {
 
         return <article className="poll-context-update" key={update.id}>
           <div className="poll-context-update-meta">
-            <strong>Creator update</strong>
             <time dateTime={update.createdAt}>{formatUpdateDate(update.createdAt)}</time>
           </div>
 
