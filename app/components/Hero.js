@@ -3,7 +3,7 @@ import { EmblemImage } from "./EmblemImage";
 export function LaunchHero() {
   return <section className="hero launch-hero" aria-labelledby="launch-title">
     <div className="hero-glow" aria-hidden="true" />
-    <div className="wrap hero-grid">
+    <div className="wrap hero-grid hero-grid-single">
       <div className="hero-copy">
         <p className="kicker">World of Warcraft: Forever · Community Voting Hub</p>
         <h1 id="launch-title">Happy Launch Day!</h1>
@@ -14,9 +14,6 @@ export function LaunchHero() {
           <a className="button secondary" href="#polls">Browse polls</a>
           <a className="button secondary" href="/profile">Check honor level</a>
         </div>
-      </div>
-      <div className="hero-emblem">
-        <EmblemImage className="hero-logo" priority alt="ForeverVote — WoW Community Voting Hub" />
       </div>
     </div>
   </section>;
