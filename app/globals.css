@@ -322,16 +322,20 @@ h1 span{color:var(--gold-pale)}
 @media(max-width:620px){
   .wrap{width:calc(100% - 30px)}
   html{scroll-padding-top:70px}
-  .header-inner{min-height:68px}
+  .header-inner{min-height:68px;gap:12px}
+  .brand-logo{width:44px!important;height:44px!important}
   .brand-crest-frame{width:41px;height:41px}
   .brand-copy strong{font-size:15px}
   .brand-copy small{font-size:6.8px;letter-spacing:1px;max-width:200px}
+  .nav{gap:10px}
   .nav a{display:none}
+  .nav .nav-submit{display:inline-flex}
+  .nav .auth-login,.nav .auth-logout,.nav .auth-admin{display:inline-flex}
   .login-placeholder,.auth-login{font-size:8px;padding:8px 9px;letter-spacing:.7px}
-  .auth-status{gap:8px}
+  .auth-status{gap:6px}
   .auth-user strong{font-size:10px}
   .auth-user small{font-size:7px}
-  .auth-logout{padding:7px 8px;font-size:8px}
+  .auth-logout,.auth-admin{padding:7px 8px;font-size:8px}
   .hero-grid{padding:52px 0 50px}
   .hero-emblem{margin-top:6px}
   h1{font-size:clamp(39px,11.8vw,50px)}
@@ -350,7 +354,11 @@ h1 span{color:var(--gold-pale)}
 
 @media(max-width:420px){
   .brand-copy small{display:none}
-  .auth-status{align-items:flex-end;flex-direction:column}
+  .brand-copy strong{font-size:14px}
+  .nav{gap:8px}
+  .nav .nav-submit{font-size:9px}
+  .auth-status{align-items:center;flex-direction:row;gap:5px}
+  .auth-logout,.auth-admin{padding:6px 7px;font-size:7.5px}
   .filters{grid-template-columns:1fr}
   .option-preview{grid-template-columns:1fr}
 }
