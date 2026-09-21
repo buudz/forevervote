@@ -12,7 +12,7 @@ function json(body, status = 200) {
 
 export async function GET(request) {
   const session = readSignedSession(request.cookies.get(SESSION_COOKIE)?.value);
-  const admin = authorizeAdminRequest(request, session);
+  const admin = await authorizeAdminRequest(request, session);
 
   if (!admin.ok) {
     return json({
