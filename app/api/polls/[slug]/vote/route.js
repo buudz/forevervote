@@ -7,13 +7,21 @@ function jsonError(code, status) {
   return NextResponse.json({ ok: false, error: code }, { status });
 }
 
+function sameOrigin(request) {
+  const origin = request.headers.get("origin");
+  return !origin || origin === new URL(request.url).origin;
+}
+
 export async function POST(request, context) {
+  if (!sameOrigin(request)) {
+    return jsonError("invalid_origin", 403);
+  }
+
   const session = readSignedSession(request.cookies.get(SESSION_COOKIE)?.value);
 
   if (!session?.user?.battlenetAccountId) {
     return jsonError("login_required", 401);
   }
-
 
   const { slug } = await context.params;
   const body = await request.json().catch(() => null);
