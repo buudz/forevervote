@@ -76,9 +76,6 @@ export function AuthStatus() {
     return <a className="login-placeholder auth-login" href="/api/auth/login/battlenet">Battle.net login</a>;
   }
 
-  const hasWowProfile = Boolean(auth.wowProfile?.hasAnyWowProfile);
-  const verifiedLabel = hasWowProfile ? "WoW profile found" : "Battle.net verified";
-
   return <div className="auth-status" aria-label="Battle.net account status">
     {auth.admin && <>
       <a className="auth-admin" href="/admin">Admin</a>
@@ -109,7 +106,7 @@ export function AuthStatus() {
     </>}
     <a className="auth-user" href="/profile" aria-label="Open your ForeverVote profile">
       <strong>{auth.user?.battletag || "Battle.net user"}</strong>
-      <small>{verifiedLabel}</small>
+      <small>View profile</small>
     </a>
     <a className="auth-logout" href="/api/auth/logout">Logout</a>
   </div>;
