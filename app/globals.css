@@ -204,6 +204,64 @@ h1 span{color:var(--gold-pale)}
 .section-heading h2{font-size:clamp(34px,3.2vw,52px);color:var(--ivory)}
 .section-heading p:not(.kicker){margin:12px 0 0;color:var(--secondary);font-size:13px;max-width:760px}
 .count-badge{white-space:nowrap;border:1px solid rgba(135,103,51,.62);border-radius:7px;color:var(--gold-pale);background:#071B2C;padding:7px 11px;font-size:9px;text-transform:uppercase;letter-spacing:1px}
+.poll-search{
+  display:grid;
+  grid-template-columns:minmax(210px,.42fr) minmax(280px,1fr);
+  gap:18px 28px;
+  align-items:end;
+  margin:0 0 22px;
+  padding:18px 20px;
+  border:1px solid rgba(135,103,51,.40);
+  border-radius:9px;
+  background:linear-gradient(145deg,rgba(8,36,59,.86),rgba(6,21,34,.92));
+  box-shadow:inset 0 1px 0 rgba(228,201,142,.04);
+}
+.poll-search>label{display:grid;gap:5px}
+.poll-search>label>span{
+  font-family:Cinzel,Georgia,serif;
+  color:var(--gold-pale);
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:1px;
+}
+.poll-search>label>small{color:var(--secondary);font-size:9px;line-height:1.5}
+.poll-search-field{
+  min-height:46px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  border:1px solid rgba(135,103,51,.52);
+  border-radius:8px;
+  background:#04131F;
+  padding:0 12px;
+  color:var(--secondary);
+}
+.poll-search-field:focus-within{
+  border-color:var(--gold);
+  box-shadow:0 0 0 2px rgba(188,152,84,.08);
+}
+.poll-search-field input{
+  min-width:0;
+  flex:1;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:var(--ivory);
+  font:inherit;
+  font-size:12px;
+}
+.poll-search-field input::placeholder{color:#70787D}
+.poll-search-field input::-webkit-search-cancel-button{display:none}
+.poll-search-field button{
+  border:0;
+  background:transparent;
+  color:var(--gold-pale);
+  padding:5px 2px;
+  font-size:9px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.6px;
+}
 .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}
 .filter{border:1px solid rgba(135,103,51,.40);background:#071B2C;color:#A6A8A5;border-radius:7px;padding:9px 14px;font-size:10px;text-transform:uppercase;letter-spacing:.7px}
 .filter:hover{border-color:var(--gold);color:var(--ivory)}
@@ -314,6 +372,7 @@ h1 span{color:var(--gold-pale)}
 }
 
 @media(max-width:700px){
+  .poll-search{grid-template-columns:1fr;padding:16px}
   .poll-grid{grid-template-columns:1fr}
   .section-heading{display:block}
   .count-badge{display:inline-block;margin-top:18px}
