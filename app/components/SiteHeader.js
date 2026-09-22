@@ -7,11 +7,11 @@ export function SiteHeader() {
         <img
           className="brand-logo"
           src="/fv-scroll-mark-final.webp"
-          width="58"
-          height="58"
+          width="66"
+          height="66"
           alt=""
           aria-hidden="true"
-          style={{ width: 58, height: 58, objectFit: "contain", flex: "0 0 auto" }}
+          style={{ width: 66, height: 66, objectFit: "contain", flex: "0 0 auto" }}
         />
         <span className="brand-copy">
           <strong>ForeverVote</strong>
