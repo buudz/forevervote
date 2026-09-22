@@ -92,6 +92,13 @@ export function PollCard({
   const selectedIds = selectedOptionIds(poll);
   const hasVote = selectedIds.length > 0;
   const totalVoters = Number(poll.totalVoters ?? poll.totalVotes ?? 0);
+  const sortedOptions = (poll.options || [])
+    .map((option, index) => ({ option, index }))
+    .sort((a, b) => {
+      const voteDifference = Number(b.option.voteCount || 0) - Number(a.option.voteCount || 0);
+      return voteDifference || a.index - b.index;
+    })
+    .map(({ option }) => option);
   const disabledReason = !authReady
     ? "Checking login…"
     : !databaseReady
@@ -125,7 +132,7 @@ export function PollCard({
     <CreatorContextUpdates updates={poll.contextUpdates || []} />
     {poll.allowMultipleAnswers && <p className="multi-answer-note">Multiple answers allowed — percentages can add up to more than 100%.</p>}
     <div className="option-preview" aria-label="Poll options">
-      {poll.options.map((option) => {
+      {sortedOptions.map((option) => {
         const selected = selectedIds.includes(option.id);
         const percent = optionPercent(option, totalVoters);
         const isVoting = votingOptionId === option.id;
