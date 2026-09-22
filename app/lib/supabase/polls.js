@@ -159,14 +159,37 @@ async function getOpenPollEditCounts() {
   return counts;
 }
 
-function pollIdentifierFilter(identifier) {
+async function resolveOpenPollIdentifier(identifier) {
   const value = String(identifier || "").trim();
 
-  if (/^\d+$/.test(value)) {
-    return `public_number=eq.${value}`;
+  if (!value) {
+    return null;
   }
 
-  return `slug=eq.${encodeFilterValue(value)}`;
+  if (/^\d+$/.test(value)) {
+    const rows = await supabaseRequest(
+      `/polls?select=id,slug,public_number&public_number=eq.${value}&status=eq.open&limit=1`
+    );
+    return rows?.[0] || null;
+  }
+
+  const rows = await supabaseRequest(
+    `/polls?select=id,slug&slug=eq.${encodeFilterValue(value)}&status=eq.open&limit=1`
+  );
+  const poll = rows?.[0];
+
+  if (!poll?.id) {
+    return null;
+  }
+
+  const numberRows = await supabaseRequest(
+    `/polls?select=public_number&id=eq.${encodeFilterValue(poll.id)}&limit=1`
+  ).catch(() => []);
+
+  return {
+    ...poll,
+    public_number: numberRows?.[0]?.public_number || null
+  };
 }
 
 export async function getOpenPollsForSession(session, options = {}) {
@@ -227,14 +250,21 @@ export async function getOpenPollForSession(session, slug) {
     return null;
   }
 
+  const resolved = await resolveOpenPollIdentifier(slug);
+  if (!resolved?.id) {
+    return null;
+  }
+
   const rows = await supabaseRequest(
-    `/polls?select=id,slug,public_number,title,description,category,status,display_order,created_at,published_at,updated_at,allow_custom_answers,allow_multiple_answers,poll_options(id,text,position,is_neutral),poll_context_updates(id,body,created_at,vote_snapshot),votes(user_id,option_id)&${pollIdentifierFilter(slug)}&status=eq.open&limit=1`
+    `/polls?select=id,slug,title,description,category,status,display_order,created_at,published_at,updated_at,allow_custom_answers,allow_multiple_answers,poll_options(id,text,position,is_neutral),poll_context_updates(id,body,created_at,vote_snapshot),votes(user_id,option_id)&id=eq.${encodeFilterValue(resolved.id)}&status=eq.open&limit=1`
   );
   const row = rows?.[0];
 
   if (!row) {
     return null;
   }
+
+  row.public_number = resolved.public_number;
 
   const userVotesByPollId = new Map();
   const battlenetAccountId = session?.user?.battlenetAccountId;
@@ -254,11 +284,7 @@ export async function getOpenPollForSession(session, slug) {
 }
 
 export async function getOpenPollBySlug(slug) {
-  const rows = await supabaseRequest(
-    `/polls?select=id,slug,public_number,status&${pollIdentifierFilter(slug)}&status=eq.open&limit=1`
-  );
-
-  return rows?.[0] || null;
+  return resolveOpenPollIdentifier(slug);
 }
 
 
@@ -290,14 +316,21 @@ export async function getPollShareData(slug) {
     return null;
   }
 
+  const resolved = await resolveOpenPollIdentifier(slug);
+  if (!resolved?.id) {
+    return null;
+  }
+
   const rows = await supabaseRequest(
-    `/polls?select=id,slug,public_number,title,description,category,status,created_at,published_at,updated_at,allow_multiple_answers,poll_options(id,text,position,is_neutral),poll_context_updates(id,body,created_at,vote_snapshot),votes(user_id,option_id)&${pollIdentifierFilter(slug)}&status=eq.open&limit=1`
+    `/polls?select=id,slug,title,description,category,status,created_at,published_at,updated_at,allow_multiple_answers,poll_options(id,text,position,is_neutral),poll_context_updates(id,body,created_at,vote_snapshot),votes(user_id,option_id)&id=eq.${encodeFilterValue(resolved.id)}&status=eq.open&limit=1`
   );
 
   const row = rows?.[0];
   if (!row) {
     return null;
   }
+
+  row.public_number = resolved.public_number;
 
   const votes = Array.isArray(row.votes) ? row.votes : [];
   const totalVoters = new Set(votes.map((vote) => vote.user_id).filter(Boolean)).size;
