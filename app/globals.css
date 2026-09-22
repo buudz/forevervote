@@ -328,6 +328,18 @@ h1 span{color:var(--gold-pale)}
 .legal-callout{margin-top:24px;padding:16px 17px;border:1px solid rgba(135,103,51,.62);border-radius:7px;background:#061522}
 .legal-callout strong{display:block;color:var(--gold-pale);font-family:Cinzel,serif;font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-bottom:7px}
 .legal-callout span{display:block;color:var(--secondary);font-size:10px;line-height:1.65}
+.source-link{
+  color:var(--gold-pale);
+  font-weight:700;
+  text-decoration:underline;
+  text-decoration-color:rgba(228,201,142,.72);
+  text-decoration-thickness:1px;
+  text-underline-offset:3px;
+}
+.source-link:hover{
+  color:var(--ivory);
+  text-decoration-color:var(--ivory);
+}
 
 /* Footer */
 .footer{background:#040E17;padding:24px 0;border-top:1px solid rgba(79,55,22,.65)}
