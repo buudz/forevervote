@@ -24,7 +24,15 @@ function formatDate(value) {
 }
 
 async function loadPoll(slug) {
-  return getPollShareData(slug).catch(() => null);
+  return getPollShareData(slug).catch((error) => {
+    console.error("Failed to load shared poll", {
+      identifier: String(slug || ""),
+      message: error?.message,
+      code: error?.code,
+      status: error?.status
+    });
+    return null;
+  });
 }
 
 export async function generateMetadata({ params }) {
