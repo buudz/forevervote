@@ -8,7 +8,7 @@ export function LandingHero() {
         <p className="kicker">World of Warcraft: Forever · Community Voting Hub</p>
         <h1 id="landing-title">What should WoW: Forever become?</h1>
         <p className="intro">Vote on community-created polls, see where players stand, and submit the questions you think the community should answer.</p>
-        <p className="intro">Battle.net sign-in helps keep participation tied to real player accounts.</p>
+        <p className="intro">Built around a verified community, ForeverVote turns player opinion into clear, public results.</p>
         <div className="hero-actions">
           <a className="button primary" href="#polls">Browse polls</a>
           <a className="button secondary" href="/submit">Submit a poll</a>
@@ -26,10 +26,10 @@ export function Hero() {
       <div className="hero-copy">
         <p className="kicker">World of Warcraft: Forever · Community Voting Hub</p>
         <h1 id="mission-title">A place for WoW Forever<br /><span>players to be heard.</span></h1>
-        <p className="intro">ForeverVote is an independent community polling hub for the biggest questions surrounding World of Warcraft: Forever. Battle.net-backed participation helps make community sentiment harder to bot or spam.</p>
+        <p className="intro">ForeverVote is an independent community polling hub for the biggest questions surrounding World of Warcraft: Forever. A verified community helps make the results more meaningful and harder to spam.</p>
         <div className="disclaimer-banner">
-          <strong>Battle.net login required.</strong>
-          <span>This helps keep votes authentic player votes instead of botted or spammed results.</span>
+          <strong>Verified community voting.</strong>
+          <span>Participation is verified to reduce botting and spam while keeping results easy to understand.</span>
         </div>
       </div>
       <div className="hero-emblem">
