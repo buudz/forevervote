@@ -291,7 +291,7 @@ export async function getPollShareData(slug) {
   }
 
   const rows = await supabaseRequest(
-    `/polls?select=id,slug,title,description,category,status,created_at,published_at,updated_at,allow_multiple_answers,poll_options(id,text,position,is_neutral),poll_context_updates(id,body,created_at,vote_snapshot),votes(user_id,option_id)&${pollIdentifierFilter(slug)}&status=eq.open&limit=1`
+    `/polls?select=id,slug,public_number,title,description,category,status,created_at,published_at,updated_at,allow_multiple_answers,poll_options(id,text,position,is_neutral),poll_context_updates(id,body,created_at,vote_snapshot),votes(user_id,option_id)&${pollIdentifierFilter(slug)}&status=eq.open&limit=1`
   );
 
   const row = rows?.[0];
