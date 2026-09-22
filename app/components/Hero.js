@@ -1,17 +1,17 @@
 import { EmblemImage } from "./EmblemImage";
 
-export function LaunchHero() {
-  return <section className="hero launch-hero" aria-labelledby="launch-title">
+export function LandingHero() {
+  return <section className="hero launch-hero" aria-labelledby="landing-title">
     <div className="hero-glow" aria-hidden="true" />
     <div className="wrap hero-grid hero-grid-single">
       <div className="hero-copy">
         <p className="kicker">World of Warcraft: Forever · Community Voting Hub</p>
-        <h1 id="launch-title">The ForeverVote Community Tool has finally launched!</h1>
-        <p className="intro">We are super happy to be releasing this website to you all. Hope you find many great polls to submit and vote on.</p>
-        <p className="intro">Discord server is coming soon!</p>
+        <h1 id="landing-title">What should WoW: Forever become?</h1>
+        <p className="intro">Vote on community-created polls, see where players stand, and submit the questions you think the community should answer.</p>
+        <p className="intro">Battle.net sign-in helps keep participation tied to real player accounts.</p>
         <div className="hero-actions">
-          <a className="button primary" href="/submit">Submit</a>
-          <a className="button secondary" href="#polls">Browse polls</a>
+          <a className="button primary" href="#polls">Browse polls</a>
+          <a className="button secondary" href="/submit">Submit a poll</a>
           <a className="button secondary" href="/profile">Check honor level</a>
         </div>
       </div>
@@ -26,7 +26,7 @@ export function Hero() {
       <div className="hero-copy">
         <p className="kicker">World of Warcraft: Forever · Community Voting Hub</p>
         <h1 id="mission-title">A place for WoW Forever<br /><span>players to be heard.</span></h1>
-        <p className="intro">ForeverVote is an independent community polling hub for the biggest questions surrounding World of Warcraft: Forever. Verified players, one vote per poll, to better understand what the community really wants.</p>
+        <p className="intro">ForeverVote is an independent community polling hub for the biggest questions surrounding World of Warcraft: Forever. Battle.net-backed participation helps make community sentiment harder to bot or spam.</p>
         <div className="disclaimer-banner">
           <strong>Battle.net login required.</strong>
           <span>This helps keep votes authentic player votes instead of botted or spammed results.</span>
