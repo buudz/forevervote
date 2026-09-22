@@ -58,7 +58,9 @@ function buildProfilePoll(row, selectedOptionIds = []) {
 
   return {
     id: row.id,
-    slug: row.slug,
+    slug: String(row.public_number || row.slug),
+    legacySlug: row.slug,
+    publicNumber: row.public_number ? Number(row.public_number) : null,
     title: row.title,
     rationale: row.description || "",
     category: row.category,
@@ -98,7 +100,7 @@ export async function getUserProfileDashboard(session) {
 
   const [ownRows, voteRows, reputationRows] = await Promise.all([
     supabaseRequest(
-      `/polls?select=id,slug,title,description,category,status,created_at,published_at,updated_at,trash_reason,allow_multiple_answers,poll_options(id,text,position,is_neutral),poll_context_updates(id,body,created_at,vote_snapshot),votes(user_id)&creator_id=eq.${encodeFilterValue(user.id)}&order=created_at.desc`
+      `/polls?select=id,slug,public_number,title,description,category,status,created_at,published_at,updated_at,trash_reason,allow_multiple_answers,poll_options(id,text,position,is_neutral),poll_context_updates(id,body,created_at,vote_snapshot),votes(user_id)&creator_id=eq.${encodeFilterValue(user.id)}&order=created_at.desc`
     ),
     supabaseRequest(
       `/votes?select=poll_id,option_id&user_id=eq.${encodeFilterValue(user.id)}`
@@ -127,7 +129,7 @@ export async function getUserProfileDashboard(session) {
 
   if (votedPollIds.length) {
     const pollRows = await supabaseRequest(
-      `/polls?select=id,slug,title,description,category,status,created_at,published_at,updated_at,trash_reason,allow_multiple_answers,poll_options(id,text,position,is_neutral),poll_context_updates(id,body,created_at,vote_snapshot),votes(user_id)&id=in.(${votedPollIds.join(",")})&order=updated_at.desc`
+      `/polls?select=id,slug,public_number,title,description,category,status,created_at,published_at,updated_at,trash_reason,allow_multiple_answers,poll_options(id,text,position,is_neutral),poll_context_updates(id,body,created_at,vote_snapshot),votes(user_id)&id=in.(${votedPollIds.join(",")})&order=updated_at.desc`
     );
 
     voted = (pollRows || []).map((row) => buildProfilePoll(row, selectedByPoll.get(row.id) || []));
