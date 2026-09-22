@@ -118,8 +118,10 @@ function buildPoll(row, userVotesByPollId = new Map(), editCountsByPollId = new 
   const userVoteOptionIds = userVotesByPollId.get(row.id) || [];
 
   return {
-    id: row.slug,
-    slug: row.slug,
+    id: String(row.public_number || row.slug),
+    slug: String(row.public_number || row.slug),
+    legacySlug: row.slug,
+    publicNumber: row.public_number ? Number(row.public_number) : null,
     databaseId: row.id,
     displayOrder: row.display_order,
     category: row.category,
@@ -157,6 +159,16 @@ async function getOpenPollEditCounts() {
   return counts;
 }
 
+function pollIdentifierFilter(identifier) {
+  const value = String(identifier || "").trim();
+
+  if (/^\d+$/.test(value)) {
+    return `public_number=eq.${value}`;
+  }
+
+  return `slug=eq.${encodeFilterValue(value)}`;
+}
+
 export async function getOpenPollsForSession(session, options = {}) {
   const sort = normalizePollSort(options.sort);
   const voteFilter = normalizePollVoteFilter(options.voteFilter);
@@ -173,7 +185,7 @@ export async function getOpenPollsForSession(session, options = {}) {
   }
 
   const rows = await supabaseRequest(
-    "/polls?select=id,slug,title,description,category,status,display_order,created_at,published_at,updated_at,allow_custom_answers,allow_multiple_answers,poll_options(id,text,position,is_neutral),poll_context_updates(id,body,created_at,vote_snapshot),votes(user_id,option_id)&status=eq.open&order=created_at.asc"
+    "/polls?select=id,slug,public_number,title,description,category,status,display_order,created_at,published_at,updated_at,allow_custom_answers,allow_multiple_answers,poll_options(id,text,position,is_neutral),poll_context_updates(id,body,created_at,vote_snapshot),votes(user_id,option_id)&status=eq.open&order=created_at.asc"
   );
 
   const pollIds = rows.map((row) => row.id).filter(Boolean);
@@ -216,7 +228,7 @@ export async function getOpenPollForSession(session, slug) {
   }
 
   const rows = await supabaseRequest(
-    `/polls?select=id,slug,title,description,category,status,display_order,created_at,published_at,updated_at,allow_custom_answers,allow_multiple_answers,poll_options(id,text,position,is_neutral),poll_context_updates(id,body,created_at,vote_snapshot),votes(user_id,option_id)&slug=eq.${encodeFilterValue(slug)}&status=eq.open&limit=1`
+    `/polls?select=id,slug,public_number,title,description,category,status,display_order,created_at,published_at,updated_at,allow_custom_answers,allow_multiple_answers,poll_options(id,text,position,is_neutral),poll_context_updates(id,body,created_at,vote_snapshot),votes(user_id,option_id)&${pollIdentifierFilter(slug)}&status=eq.open&limit=1`
   );
   const row = rows?.[0];
 
@@ -243,7 +255,7 @@ export async function getOpenPollForSession(session, slug) {
 
 export async function getOpenPollBySlug(slug) {
   const rows = await supabaseRequest(
-    `/polls?select=id,slug,status&slug=eq.${encodeFilterValue(slug)}&status=eq.open&limit=1`
+    `/polls?select=id,slug,public_number,status&${pollIdentifierFilter(slug)}&status=eq.open&limit=1`
   );
 
   return rows?.[0] || null;
@@ -257,11 +269,13 @@ export async function getOpenPollSeoData() {
   }
 
   const rows = await supabaseRequest(
-    "/polls?select=slug,title,description,category,created_at,published_at,updated_at&status=eq.open&order=updated_at.desc"
+    "/polls?select=slug,public_number,title,description,category,created_at,published_at,updated_at&status=eq.open&order=updated_at.desc"
   );
 
   return (rows || []).map((row) => ({
-    slug: row.slug,
+    slug: String(row.public_number || row.slug),
+    legacySlug: row.slug,
+    publicNumber: row.public_number ? Number(row.public_number) : null,
     title: row.title,
     rationale: row.description,
     category: row.category,
@@ -277,7 +291,7 @@ export async function getPollShareData(slug) {
   }
 
   const rows = await supabaseRequest(
-    `/polls?select=id,slug,title,description,category,status,created_at,published_at,updated_at,allow_multiple_answers,poll_options(id,text,position,is_neutral),poll_context_updates(id,body,created_at,vote_snapshot),votes(user_id,option_id)&slug=eq.${encodeFilterValue(slug)}&status=eq.open&limit=1`
+    `/polls?select=id,slug,public_number,title,description,category,status,created_at,published_at,updated_at,allow_multiple_answers,poll_options(id,text,position,is_neutral),poll_context_updates(id,body,created_at,vote_snapshot),votes(user_id,option_id)&${pollIdentifierFilter(slug)}&status=eq.open&limit=1`
   );
 
   const row = rows?.[0];
@@ -290,7 +304,9 @@ export async function getPollShareData(slug) {
 
   return {
     id: row.id,
-    slug: row.slug,
+    slug: String(row.public_number || row.slug),
+    legacySlug: row.slug,
+    publicNumber: row.public_number ? Number(row.public_number) : null,
     title: row.title,
     rationale: row.description,
     category: row.category,
@@ -466,7 +482,7 @@ export async function submitPollDraft({
     }
   }
 
-  const rows = await supabaseRequest("/polls?select=id,slug,status,created_at", {
+  const rows = await supabaseRequest("/polls?select=id,slug,public_number,status,created_at", {
     method: "POST",
     headers: {
       Prefer: "return=representation"
@@ -519,7 +535,7 @@ export async function submitPollDraft({
 
   return {
     poll_id: poll.id,
-    poll_slug: poll.slug,
+    poll_slug: String(poll.public_number || poll.slug),
     poll_status: poll.status || "draft",
     submitted_at: poll.created_at
   };
