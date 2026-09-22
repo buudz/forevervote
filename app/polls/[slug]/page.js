@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { SiteFooter } from "../../components/SiteFooter";
 import { SiteHeader } from "../../components/SiteHeader";
 import { StandalonePollCard } from "../../components/StandalonePollCard";
@@ -76,6 +76,10 @@ export default async function PollSharePage({ params }) {
 
   if (!poll) {
     notFound();
+  }
+
+  if (String(slug) !== String(poll.slug)) {
+    permanentRedirect(`/polls/${poll.slug}`);
   }
 
   const editHistory = await getPublicPollEditHistory(slug).catch(() => []);
