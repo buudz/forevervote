@@ -11,7 +11,7 @@ export function AboutSection() {
         <p>Results are community feedback only. They are not scientific polling, they do not represent every WoW player, and they have no official decision-making authority.</p>
         <div className="legal-callout">
           <strong>Public source &amp; transparency</strong>
-          <span>ForeverVote's source code is public on <a href="https://github.com/buudz/forevervote">GitHub</a> so anyone can inspect how authentication, voting, moderation, and vote-integrity protections work. The live site also links to the Git commit used for its Vercel build, making the deployed version easy to compare with the public source.</span>
+          <span>ForeverVote's source code is public on <a className="source-link" href="https://github.com/buudz/forevervote">GitHub ↗</a> so anyone can inspect how authentication, voting, moderation, and vote-integrity protections work. The live site also links to the Git commit used for its Vercel build, making the deployed version easy to compare with the public source.</span>
         </div>
         <div className="legal-callout">
           <strong>Blizzard disclaimer</strong>
