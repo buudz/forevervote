@@ -94,6 +94,7 @@ export function PollsSection({ initialPolls = fallbackPolls, initialDatabaseRead
   const [category, setCategory] = useState("All");
   const [sort, setSort] = useState("explore");
   const [voteFilter, setVoteFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [shareMessage, setShareMessage] = useState("");
   const [sharePayload, setSharePayload] = useState(null);
   const [statusMessage, setStatusMessage] = useState("");
@@ -109,7 +110,7 @@ export function PollsSection({ initialPolls = fallbackPolls, initialDatabaseRead
   const canVote = Boolean(auth.authenticated && pollState.databaseReady);
 
   async function loadPolls(nextSort = sort, nextVoteFilter = voteFilter, active = true) {
-    const params = new URLSearchParams({ sort: nextSort, filter: nextVoteFilter || "all" });
+    const params = new URLSearchParams({ sort: nextSort, filter: "all" });
     const pollsResponse = await fetch(`/api/polls?${params.toString()}`, { cache: "no-store" });
 
     if (!active) {
@@ -186,9 +187,55 @@ export function PollsSection({ initialPolls = fallbackPolls, initialDatabaseRead
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [sharePayload]);
 
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+
   const visiblePolls = useMemo(() => {
-    return pollState.polls.filter((poll) => category === "All" || poll.category === category);
-  }, [category, pollState.polls]);
+    const terms = normalizedSearch.split(/\s+/).filter(Boolean);
+
+    return pollState.polls.filter((poll) => {
+      if (category !== "All" && poll.category !== category) {
+        return false;
+      }
+
+      const hasVoted = Array.isArray(poll.userVoteOptionIds)
+        ? poll.userVoteOptionIds.length > 0
+        : Boolean(poll.userVoteOptionId);
+
+      if (!normalizedSearch) {
+        if (voteFilter === "unvoted" && hasVoted) {
+          return false;
+        }
+
+        if (voteFilter === "voted" && !hasVoted) {
+          return false;
+        }
+      }
+
+      if (!terms.length) {
+        return true;
+      }
+
+      const searchableText = [
+        poll.title,
+        poll.rationale,
+        poll.context,
+        poll.category,
+        ...(poll.options || []).map((option) => option.text),
+        ...(poll.contextUpdates || []).map((update) => update.body)
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return terms.every((term) => searchableText.includes(term));
+    });
+  }, [category, normalizedSearch, pollState.polls, voteFilter]);
+
+  const filtersActive = Boolean(
+    normalizedSearch ||
+    category !== "All" ||
+    voteFilter !== "all"
+  );
 
   function persistPreferences(next) {
     if (!auth.authenticated) {
@@ -310,7 +357,29 @@ export function PollsSection({ initialPolls = fallbackPolls, initialDatabaseRead
           <h2 id="polls-title">Polls to vote on</h2>
           <p>{pollState.databaseReady ? "Vote on community questions about World of Warcraft: Forever." : "Community questions about World of Warcraft: Forever. Live voting is temporarily unavailable."}</p>
         </div>
-        <span className="count-badge">{pollState.polls.length} polls</span>
+        <span className="count-badge">{filtersActive ? `${visiblePolls.length} of ${pollState.polls.length} polls` : `${pollState.polls.length} polls`}</span>
+      </div>
+
+      <div className="poll-search">
+        <label htmlFor="poll-search-input">
+          <span>Search existing polls</span>
+          <small>Search titles, topics, context and answer options. Search checks all open polls.</small>
+        </label>
+        <div className="poll-search-field">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" strokeWidth="1.8" />
+            <path d="m16.5 16.5 4 4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+          </svg>
+          <input
+            id="poll-search-input"
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search: arena, housing, hardcore, class..."
+            autoComplete="off"
+          />
+          {searchQuery && <button type="button" onClick={() => setSearchQuery("")} aria-label="Clear poll search">Clear</button>}
+        </div>
       </div>
 
       <div
@@ -354,7 +423,13 @@ export function PollsSection({ initialPolls = fallbackPolls, initialDatabaseRead
       {pollState.loading && <p className="poll-status">Loading live polls…</p>}
 
       {!pollState.loading && pollState.databaseReady && visiblePolls.length === 0 && <div className="poll-empty-state" role="status">
-        {voteFilter === "unvoted" && auth.authenticated
+        {normalizedSearch
+          ? <>
+              <strong>No matching polls.</strong>
+              <span>Nothing open matches “{searchQuery.trim()}”. Try fewer words or a broader topic.</span>
+              <button className="button secondary" type="button" onClick={() => setSearchQuery("")}>Clear search</button>
+            </>
+          : voteFilter === "unvoted" && auth.authenticated
           ? <>
               <strong>{category === "All" ? "You’re all caught up." : "Nothing left to vote on here."}</strong>
               <span>{category === "All" ? "You’ve voted on all available polls." : "You’ve voted on every available poll in this category."}</span>
