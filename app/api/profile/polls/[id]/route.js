@@ -1,16 +1,12 @@
 import { NextResponse } from "next/server";
 import { readSignedSession, SESSION_COOKIE } from "../../../../lib/auth/session";
+import { isTrustedMutationRequest, readJsonBody, RequestBodyError } from "../../../../lib/http/request";
 import { editOwnPoll } from "../../../../lib/supabase/profile";
 
 const categories = ["PvE", "PvP", "World", "RolePlay", "Hardcore", "General"];
 
 function clean(value) {
   return typeof value === "string" ? value.trim() : "";
-}
-
-function sameOrigin(request) {
-  const origin = request.headers.get("origin");
-  return !origin || origin === new URL(request.url).origin;
 }
 
 function validate(body) {
@@ -53,17 +49,27 @@ function validate(body) {
 }
 
 export async function PATCH(request, context) {
-  if (!sameOrigin(request)) {
+  if (!isTrustedMutationRequest(request)) {
     return NextResponse.json({ ok: false, error: "invalid_origin" }, { status: 403 });
   }
 
   const session = readSignedSession(request.cookies.get(SESSION_COOKIE)?.value);
-  if (!session) {
+  if (!session?.user?.battlenetAccountId) {
     return NextResponse.json({ ok: false, error: "login_required" }, { status: 401 });
   }
 
   const { id } = await context.params;
-  const body = await request.json().catch(() => null);
+  let body;
+
+  try {
+    body = await readJsonBody(request, { maxBytes: 16_384 });
+  } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return NextResponse.json({ ok: false, error: error.code }, { status: error.status });
+    }
+    throw error;
+  }
+
   const validated = validate(body);
 
   if (validated.error) {
