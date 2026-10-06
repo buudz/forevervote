@@ -60,8 +60,6 @@ function buildProfilePoll(row, selectedOptionIds = []) {
     id: row.id,
     slug: row.public_id,
     publicId: row.public_id,
-    legacySlug: row.slug,
-    legacyNumber: row.public_number ? Number(row.public_number) : null,
     title: row.title,
     rationale: row.description || "",
     category: row.category,
