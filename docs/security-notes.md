@@ -14,9 +14,13 @@
 
 - The browser never supplies its own ForeverVote user ID.
 - A signed session must contain a Battle.net account ID before a vote mutation proceeds.
-- State-changing poll/profile/admin endpoints use same-origin checks in addition to SameSite cookies.
+- State-changing browser endpoints require same-origin request metadata in addition to SameSite cookies.
+- Mutation endpoints enforce small request-body limits before parsing JSON.
+- Logout is a POST mutation rather than a state-changing GET.
 - The server upserts the Battle.net-backed user using the service-role credential.
 - Database constraints enforce valid user/poll/option relationships and vote uniqueness rules.
+- Public poll URLs use random opaque IDs; legacy sequential numbers are redirect-only.
+- Poll submission validation, rate limiting, poll creation, and answer creation execute atomically in PostgreSQL.
 - Browser database roles have RLS enabled and no direct application-table access.
 - The Supabase service-role key is used only from server code.
 
