@@ -118,11 +118,11 @@ function buildPoll(row, userVotesByPollId = new Map(), editCountsByPollId = new 
   const userVoteOptionIds = userVotesByPollId.get(row.id) || [];
 
   return {
-    id: String(row.public_number || row.slug),
-    slug: String(row.public_number || row.slug),
+    id: row.public_id,
+    slug: row.public_id,
+    publicId: row.public_id,
     legacySlug: row.slug,
-    publicNumber: row.public_number ? Number(row.public_number) : null,
-    databaseId: row.id,
+    legacyNumber: row.public_number ? Number(row.public_number) : null,
     displayOrder: row.display_order,
     category: row.category,
     title: row.title,
@@ -166,30 +166,25 @@ async function resolveOpenPollIdentifier(identifier) {
     return null;
   }
 
+  if (/^[0-9a-f]{16}$/.test(value)) {
+    const rows = await supabaseRequest(
+      `/polls?select=id,slug,public_id,public_number&public_id=eq.${encodeFilterValue(value)}&status=eq.open&limit=1`
+    );
+    return rows?.[0] || null;
+  }
+
   if (/^\d+$/.test(value)) {
     const rows = await supabaseRequest(
-      `/polls?select=id,slug,public_number&public_number=eq.${value}&status=eq.open&limit=1`
+      `/polls?select=id,slug,public_id,public_number&public_number=eq.${value}&status=eq.open&limit=1`
     );
     return rows?.[0] || null;
   }
 
   const rows = await supabaseRequest(
-    `/polls?select=id,slug&slug=eq.${encodeFilterValue(value)}&status=eq.open&limit=1`
+    `/polls?select=id,slug,public_id,public_number&slug=eq.${encodeFilterValue(value)}&status=eq.open&limit=1`
   );
-  const poll = rows?.[0];
 
-  if (!poll?.id) {
-    return null;
-  }
-
-  const numberRows = await supabaseRequest(
-    `/polls?select=public_number&id=eq.${encodeFilterValue(poll.id)}&limit=1`
-  ).catch(() => []);
-
-  return {
-    ...poll,
-    public_number: numberRows?.[0]?.public_number || null
-  };
+  return rows?.[0] || null;
 }
 
 export async function getOpenPollsForSession(session, options = {}) {
@@ -208,7 +203,7 @@ export async function getOpenPollsForSession(session, options = {}) {
   }
 
   const rows = await supabaseRequest(
-    "/polls?select=id,slug,public_number,title,description,category,status,display_order,created_at,published_at,updated_at,allow_custom_answers,allow_multiple_answers,poll_options(id,text,position,is_neutral),poll_context_updates(id,body,created_at,vote_snapshot),votes(user_id,option_id)&status=eq.open&order=created_at.asc"
+    "/polls?select=id,slug,public_id,public_number,title,description,category,status,display_order,created_at,published_at,updated_at,allow_custom_answers,allow_multiple_answers,poll_options(id,text,position,is_neutral),poll_context_updates(id,body,created_at,vote_snapshot),votes(user_id,option_id)&status=eq.open&order=created_at.asc"
   );
 
   const pollIds = rows.map((row) => row.id).filter(Boolean);
@@ -264,6 +259,8 @@ export async function getOpenPollForSession(session, slug) {
     return null;
   }
 
+  row.public_id = resolved.public_id;
+  row.public_id = resolved.public_id;
   row.public_number = resolved.public_number;
 
   const userVotesByPollId = new Map();
@@ -295,13 +292,14 @@ export async function getOpenPollSeoData() {
   }
 
   const rows = await supabaseRequest(
-    "/polls?select=slug,public_number,title,description,category,created_at,published_at,updated_at&status=eq.open&order=updated_at.desc"
+    "/polls?select=slug,public_id,public_number,title,description,category,created_at,published_at,updated_at&status=eq.open&order=updated_at.desc"
   );
 
   return (rows || []).map((row) => ({
-    slug: String(row.public_number || row.slug),
+    slug: row.public_id,
+    publicId: row.public_id,
     legacySlug: row.slug,
-    publicNumber: row.public_number ? Number(row.public_number) : null,
+    legacyNumber: row.public_number ? Number(row.public_number) : null,
     title: row.title,
     rationale: row.description,
     category: row.category,
@@ -336,10 +334,11 @@ export async function getPollShareData(slug) {
   const totalVoters = new Set(votes.map((vote) => vote.user_id).filter(Boolean)).size;
 
   return {
-    id: row.id,
-    slug: String(row.public_number || row.slug),
+    id: row.public_id,
+    slug: row.public_id,
+    publicId: row.public_id,
     legacySlug: row.slug,
-    publicNumber: row.public_number ? Number(row.public_number) : null,
+    legacyNumber: row.public_number ? Number(row.public_number) : null,
     title: row.title,
     rationale: row.description,
     category: row.category,
@@ -494,83 +493,31 @@ export async function submitPollDraft({
   allowMultipleAnswers = false,
   bypassRateLimit = false
 }) {
-  if (!bypassRateLimit) {
-    const now = Date.now();
-    const tenMinutesAgo = new Date(now - (10 * 60 * 1000)).toISOString();
-    const dayAgo = new Date(now - (24 * 60 * 60 * 1000)).toISOString();
-
-    const [recentPolls, dailyPolls] = await Promise.all([
-      supabaseRequest(
-        `/polls?select=id&creator_id=eq.${encodeFilterValue(creatorId)}&created_at=gt.${encodeFilterValue(tenMinutesAgo)}`
-      ),
-      supabaseRequest(
-        `/polls?select=id&creator_id=eq.${encodeFilterValue(creatorId)}&created_at=gt.${encodeFilterValue(dayAgo)}`
-      )
-    ]);
-
-    if ((recentPolls || []).length >= 3 || (dailyPolls || []).length >= 10) {
-      const error = new Error("Too many poll submissions recently");
-      error.code = "RATE_LIMITED";
-      throw error;
-    }
-  }
-
-  const rows = await supabaseRequest("/polls?select=id,slug,public_number,status,created_at", {
+  const rows = await supabaseRequest("/rpc/submit_poll_v3", {
     method: "POST",
-    headers: {
-      Prefer: "return=representation"
-    },
     body: JSON.stringify({
-      creator_id: creatorId,
-      slug,
-      title,
-      description,
-      category,
-      status: "draft",
-      allow_custom_answers: false,
-      allow_multiple_answers: Boolean(allowMultipleAnswers)
+      p_creator_id: creatorId,
+      p_slug: slug,
+      p_title: title,
+      p_description: description,
+      p_category: category,
+      p_options: options,
+      p_allow_multiple_answers: Boolean(allowMultipleAnswers),
+      p_bypass_rate_limit: Boolean(bypassRateLimit)
     })
   });
 
   const poll = rows?.[0];
 
-  if (!poll?.id) {
-    throw new Error("Supabase did not return a poll id");
-  }
-
-  const optionRows = options.map((option, index) => ({
-    poll_id: poll.id,
-    text: option,
-    position: index + 1,
-    is_neutral: ["don't care", "no preference", "undecided", "no strong opinion"]
-      .includes(String(option).trim().toLowerCase())
-  }));
-
-  try {
-    await supabaseRequest("/poll_options", {
-      method: "POST",
-      headers: {
-        Prefer: "return=minimal"
-      },
-      body: JSON.stringify(optionRows)
-    });
-  } catch (error) {
-    await supabaseRequest(
-      `/polls?id=eq.${encodeFilterValue(poll.id)}&status=eq.draft`,
-      {
-        method: "DELETE",
-        headers: { Prefer: "return=minimal" }
-      }
-    ).catch(() => null);
-
-    throw error;
+  if (!poll?.poll_id || !poll?.poll_public_id) {
+    throw new Error("Supabase did not return the created poll");
   }
 
   return {
-    poll_id: poll.id,
-    poll_slug: String(poll.public_number || poll.slug),
-    poll_status: poll.status || "draft",
-    submitted_at: poll.created_at
+    poll_id: poll.poll_id,
+    poll_slug: poll.poll_public_id,
+    poll_status: poll.poll_status || "draft",
+    submitted_at: poll.submitted_at
   };
 }
 
