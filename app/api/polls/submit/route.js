@@ -1,24 +1,19 @@
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { pollCategories } from "../../../data/polls";
-import { readSignedSession, SESSION_COOKIE } from "../../../lib/auth/session";
 import { isAdminSession } from "../../../lib/admin/access";
+import { readSignedSession, SESSION_COOKIE } from "../../../lib/auth/session";
+import { isTrustedMutationRequest, readJsonBody, RequestBodyError } from "../../../lib/http/request";
 import { submitPollDraft } from "../../../lib/supabase/polls";
 import { ensureUserFromSession } from "../../../lib/supabase/users";
 
 const ALLOWED_CATEGORIES = pollCategories.filter((category) => category !== "All");
-const MAX_BODY_LENGTH = 12000;
 
 function json(body, status = 200) {
   return NextResponse.json(body, {
     status,
     headers: { "Cache-Control": "no-store" }
   });
-}
-
-function sameOrigin(request) {
-  const origin = request.headers.get("origin");
-  return !origin || origin === new URL(request.url).origin;
 }
 
 function clean(value) {
@@ -165,7 +160,7 @@ function validateSubmission(body) {
 }
 
 export async function POST(request) {
-  if (!sameOrigin(request)) {
+  if (!isTrustedMutationRequest(request)) {
     return json({ ok: false, error: "invalid_origin" }, 403);
   }
 
@@ -175,17 +170,17 @@ export async function POST(request) {
     return json({ ok: false, error: "login_required" }, 401);
   }
 
-
-  const rawBody = await request.text();
-  if (rawBody.length > MAX_BODY_LENGTH) {
-    return json({ ok: false, error: "submission_too_large" }, 413);
-  }
-
   let body;
   try {
-    body = JSON.parse(rawBody);
-  } catch {
-    return json({ ok: false, error: "invalid_json" }, 400);
+    body = await readJsonBody(request, { maxBytes: 12_000 });
+  } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return json({
+        ok: false,
+        error: error.code === "request_too_large" ? "submission_too_large" : error.code
+      }, error.status);
+    }
+    throw error;
   }
 
   const validated = validateSubmission(body);
