@@ -276,7 +276,7 @@ function EditPollPanel({ poll, onClose, onSaved }) {
         <input
           type="text"
           minLength="10"
-          maxLength="180"
+          maxLength="90"
           required
           aria-invalid={titleTooLong}
           value={title}
