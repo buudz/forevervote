@@ -90,6 +90,17 @@ function openShareWindow(url) {
   window.open(url, "_blank", "noopener,noreferrer,width=760,height=620");
 }
 
+async function fetchPollsForSort(sort) {
+  const params = new URLSearchParams({ sort, filter: "all" });
+  const response = await fetch(`/api/polls?${params.toString()}`, { cache: "no-store" });
+  const data = await response.json().catch(() => ({}));
+
+  return {
+    ok: Boolean(response.ok && data.databaseReady),
+    polls: Array.isArray(data.polls) ? data.polls : []
+  };
+}
+
 export function PollsSection({ initialPolls = fallbackPolls, initialDatabaseReady = false }) {
   const [category, setCategory] = useState("All");
   const [sort, setSort] = useState("explore");
@@ -109,22 +120,16 @@ export function PollsSection({ initialPolls = fallbackPolls, initialDatabaseRead
   const authReady = !auth.loading;
   const canVote = Boolean(auth.authenticated && pollState.databaseReady);
 
-  const loadPolls = useCallback(async (nextSort, isActive = () => true) => {
-    const params = new URLSearchParams({ sort: nextSort, filter: "all" });
-    const pollsResponse = await fetch(`/api/polls?${params.toString()}`, { cache: "no-store" });
-    const pollsData = await pollsResponse.json().catch(() => ({}));
+  const loadPolls = useCallback(async (nextSort) => {
+    const result = await fetchPollsForSort(nextSort);
 
-    if (!isActive()) {
-      return;
-    }
-
-    if (!pollsResponse.ok || !pollsData.databaseReady) {
+    if (!result.ok) {
       setPollState({ loading: false, databaseReady: false, polls: fallbackPolls });
       setStatusMessage("Live voting is temporarily unavailable. The polls remain visible while the service reconnects.");
       return;
     }
 
-    setPollState({ loading: false, databaseReady: true, polls: pollsData.polls });
+    setPollState({ loading: false, databaseReady: true, polls: result.polls });
     setStatusMessage("");
   }, []);
 
@@ -158,17 +163,30 @@ export function PollsSection({ initialPolls = fallbackPolls, initialDatabaseRead
   useEffect(() => {
     let active = true;
 
-    loadPolls(sort, () => active).catch(() => {
-      if (active) {
-        setPollState({ loading: false, databaseReady: false, polls: fallbackPolls });
-        setStatusMessage("Could not load live polls. Try refreshing in a moment.");
-      }
-    });
+    fetchPollsForSort(sort)
+      .then((result) => {
+        if (!active) return;
+
+        if (!result.ok) {
+          setPollState({ loading: false, databaseReady: false, polls: fallbackPolls });
+          setStatusMessage("Live voting is temporarily unavailable. The polls remain visible while the service reconnects.");
+          return;
+        }
+
+        setPollState({ loading: false, databaseReady: true, polls: result.polls });
+        setStatusMessage("");
+      })
+      .catch(() => {
+        if (active) {
+          setPollState({ loading: false, databaseReady: false, polls: fallbackPolls });
+          setStatusMessage("Could not load live polls. Try refreshing in a moment.");
+        }
+      });
 
     return () => {
       active = false;
     };
-  }, [loadPolls, sort]);
+  }, [sort]);
 
   useEffect(() => {
     if (!sharePayload) {
