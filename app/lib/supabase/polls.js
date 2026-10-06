@@ -260,7 +260,6 @@ export async function getOpenPollForSession(session, slug) {
   }
 
   row.public_id = resolved.public_id;
-  row.public_id = resolved.public_id;
   row.public_number = resolved.public_number;
 
   const userVotesByPollId = new Map();
@@ -328,6 +327,7 @@ export async function getPollShareData(slug) {
     return null;
   }
 
+  row.public_id = resolved.public_id;
   row.public_number = resolved.public_number;
 
   const votes = Array.isArray(row.votes) ? row.votes : [];
