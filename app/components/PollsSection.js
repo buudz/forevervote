@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { pollCategories, polls as staticPolls, withFallbackOptions } from "../data/polls";
 import { PollCard } from "./PollCard";
 
@@ -109,15 +109,14 @@ export function PollsSection({ initialPolls = fallbackPolls, initialDatabaseRead
   const authReady = !auth.loading;
   const canVote = Boolean(auth.authenticated && pollState.databaseReady);
 
-  async function loadPolls(nextSort = sort, nextVoteFilter = voteFilter, active = true) {
+  const loadPolls = useCallback(async (nextSort, isActive = () => true) => {
     const params = new URLSearchParams({ sort: nextSort, filter: "all" });
     const pollsResponse = await fetch(`/api/polls?${params.toString()}`, { cache: "no-store" });
+    const pollsData = await pollsResponse.json().catch(() => ({}));
 
-    if (!active) {
+    if (!isActive()) {
       return;
     }
-
-    const pollsData = await pollsResponse.json();
 
     if (!pollsResponse.ok || !pollsData.databaseReady) {
       setPollState({ loading: false, databaseReady: false, polls: fallbackPolls });
@@ -127,7 +126,7 @@ export function PollsSection({ initialPolls = fallbackPolls, initialDatabaseRead
 
     setPollState({ loading: false, databaseReady: true, polls: pollsData.polls });
     setStatusMessage("");
-  }
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -158,9 +157,8 @@ export function PollsSection({ initialPolls = fallbackPolls, initialDatabaseRead
 
   useEffect(() => {
     let active = true;
-    setPollState((current) => ({ ...current, loading: true }));
 
-    loadPolls(sort, voteFilter, active).catch(() => {
+    loadPolls(sort, () => active).catch(() => {
       if (active) {
         setPollState({ loading: false, databaseReady: false, polls: fallbackPolls });
         setStatusMessage("Could not load live polls. Try refreshing in a moment.");
@@ -170,7 +168,7 @@ export function PollsSection({ initialPolls = fallbackPolls, initialDatabaseRead
     return () => {
       active = false;
     };
-  }, [sort, voteFilter]);
+  }, [loadPolls, sort]);
 
   useEffect(() => {
     if (!sharePayload) {
@@ -336,7 +334,7 @@ export function PollsSection({ initialPolls = fallbackPolls, initialDatabaseRead
         throw new Error(data.error || "vote_failed");
       }
 
-      await loadPolls(sort, voteFilter);
+      await loadPolls(sort);
       setStatusMessage(
         isRetracting
           ? "Selection removed."
@@ -484,6 +482,8 @@ export function PollsSection({ initialPolls = fallbackPolls, initialDatabaseRead
           >×</button>
         </div>
 
+        {/* Generated share cards are intentionally rendered as raw images so the preview is exact. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={sharePayload.imageUrl} alt="" aria-hidden="true" style={sharePreviewStyle} />
 
         <div style={shareActionsStyle}>
