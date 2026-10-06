@@ -277,7 +277,7 @@ export async function getOpenPollForSession(session, slug) {
   return buildPoll(row, userVotesByPollId, new Map());
 }
 
-export async function getOpenPollBySlug(slug) {
+export async function getOpenPollByIdentifier(slug) {
   return resolveOpenPollIdentifier(slug);
 }
 
@@ -390,7 +390,7 @@ export async function getPublicPollEditHistory(slug) {
     return [];
   }
 
-  const poll = await getOpenPollBySlug(slug);
+  const poll = await getOpenPollByIdentifier(slug);
   if (!poll?.id) {
     return [];
   }
@@ -436,7 +436,7 @@ export async function editPollAdmin({
 }
 
 export async function castVote({ pollSlug, optionId, userId }) {
-  const poll = await getOpenPollBySlug(pollSlug);
+  const poll = await getOpenPollByIdentifier(pollSlug);
 
   if (!poll?.id) {
     const error = new Error("Poll not found or not open");
@@ -457,7 +457,7 @@ export async function castVote({ pollSlug, optionId, userId }) {
 }
 
 export async function retractVote({ pollSlug, optionId, userId }) {
-  const poll = await getOpenPollBySlug(pollSlug);
+  const poll = await getOpenPollByIdentifier(pollSlug);
 
   if (!poll?.id) {
     const error = new Error("Poll not found or not open");
