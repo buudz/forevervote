@@ -6,15 +6,21 @@
     "brand-assets": "node scripts/build-brand-assets.mjs",
     "predev": "npm run brand-assets",
     "dev": "next dev",
+    "lint": "eslint . --max-warnings=0",
     "prebuild": "npm run brand-assets",
     "build": "next build",
+    "check": "npm run lint && npm run build",
     "start": "next start"
   },
   "dependencies": {
     "next": "16.3.8",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "sharp": "^0.34.4"
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "sharp": "0.35.5"
+  },
+  "devDependencies": {
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.8"
   },
   "engines": {
     "node": ">=22.0.0"
