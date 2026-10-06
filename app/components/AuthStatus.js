@@ -108,6 +108,8 @@ export function AuthStatus() {
       <strong>{auth.user?.battletag || "Battle.net user"}</strong>
       <small>View profile</small>
     </a>
-    <a className="auth-logout" href="/api/auth/logout">Logout</a>
+    <form className="auth-logout-form" action="/api/auth/logout" method="post">
+      <button className="auth-logout" type="submit">Logout</button>
+    </form>
   </div>;
 }
