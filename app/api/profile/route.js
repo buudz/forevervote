@@ -13,7 +13,7 @@ function retailStatus(wowProfile) {
 export async function GET(request) {
   const session = readSignedSession(request.cookies.get(SESSION_COOKIE)?.value);
 
-  if (!session) {
+  if (!session?.user?.battlenetAccountId) {
     return NextResponse.json({ ok: false, error: "login_required" }, {
       status: 401,
       headers: { "Cache-Control": "no-store" }
@@ -23,14 +23,13 @@ export async function GET(request) {
   try {
     const [dashboard, user] = await Promise.all([
       getUserProfileDashboard(session),
-      getUserByBattleNetAccountId(session.user?.battlenetAccountId)
+      getUserByBattleNetAccountId(session.user.battlenetAccountId)
     ]);
 
     return NextResponse.json({
       ok: true,
       profile: {
         battletag: session.user?.battletag || "Battle.net user",
-        battlenetAccountId: session.user?.battlenetAccountId || null,
         hasRetailProfile: retailStatus(session.wowProfile),
         hasClassicProfile: Boolean(session.wowProfile?.hasClassicProfile),
         region: session.wowProfile?.region || null
