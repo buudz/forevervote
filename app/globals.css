@@ -108,7 +108,8 @@ h1,h2,h3{font-family:Cinzel,Georgia,serif;margin:0;line-height:1.1}
 .auth-user{display:flex;flex-direction:column;line-height:1.05;text-transform:none;letter-spacing:0;color:var(--text)}
 .auth-user strong{font-size:12px;color:var(--gold-pale)}
 .auth-user small{margin-top:5px;color:var(--secondary);font-size:8px;text-transform:uppercase;letter-spacing:.8px}
-.auth-logout{border:1px solid rgba(135,103,51,.55);background:#071B2C;padding:8px 10px;border-radius:7px;color:#B9B7AE;font-size:9px;text-transform:uppercase;letter-spacing:.8px}\n.auth-admin{border:1px solid var(--gold);background:#0D3150;padding:8px 10px;border-radius:7px;color:var(--ivory)!important;font-size:9px;text-transform:uppercase;letter-spacing:.8px}
+.auth-logout{border:1px solid rgba(135,103,51,.55);background:#071B2C;padding:8px 10px;border-radius:7px;color:#B9B7AE;font-size:9px;text-transform:uppercase;letter-spacing:.8px}
+.auth-logout-form{margin:0}\n.auth-admin{border:1px solid var(--gold);background:#0D3150;padding:8px 10px;border-radius:7px;color:var(--ivory)!important;font-size:9px;text-transform:uppercase;letter-spacing:.8px}
 
 /* Hero */
 .hero{position:relative;overflow:hidden;border-bottom:1px solid rgba(79,55,22,.95)}

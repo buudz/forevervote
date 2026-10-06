@@ -276,7 +276,7 @@ function EditPollPanel({ poll, onClose, onSaved }) {
         <input
           type="text"
           minLength="10"
-          maxLength="180"
+          maxLength="90"
           required
           aria-invalid={titleTooLong}
           value={title}
@@ -416,6 +416,21 @@ function ContextUpdatePanel({ poll, onClose, onSaved }) {
   </div>;
 }
 
+async function fetchProfileDashboardData() {
+  const response = await fetch("/api/profile", { cache: "no-store" });
+  const data = await response.json().catch(() => ({}));
+
+  if (response.status === 401) {
+    return { data: null, error: "login_required" };
+  }
+
+  if (!response.ok || !data.ok) {
+    throw new Error("Could not load your ForeverVote profile.");
+  }
+
+  return { data, error: "" };
+}
+
 export function ProfileDashboard() {
   const [state, setState] = useState({ loading: true, data: null, error: "" });
   const [editingPoll, setEditingPoll] = useState(null);
@@ -423,23 +438,28 @@ export function ProfileDashboard() {
   const contextPanelRef = useRef(null);
 
   async function load() {
-    const response = await fetch("/api/profile", { cache: "no-store" });
-    const data = await response.json().catch(() => ({}));
-
-    if (response.status === 401) {
-      setState({ loading: false, data: null, error: "login_required" });
-      return;
-    }
-
-    if (!response.ok || !data.ok) {
-      throw new Error("Could not load your ForeverVote profile.");
-    }
-
-    setState({ loading: false, data, error: "" });
+    const result = await fetchProfileDashboardData();
+    setState({ loading: false, data: result.data, error: result.error });
   }
 
   useEffect(() => {
-    load().catch((error) => setState({ loading: false, data: null, error: error.message }));
+    let active = true;
+
+    fetchProfileDashboardData()
+      .then((result) => {
+        if (active) {
+          setState({ loading: false, data: result.data, error: result.error });
+        }
+      })
+      .catch((error) => {
+        if (active) {
+          setState({ loading: false, data: null, error: error.message });
+        }
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {

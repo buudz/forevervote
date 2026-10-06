@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { authorizeAdminRequest } from "../../../lib/admin/access";
 import { readSignedSession, SESSION_COOKIE } from "../../../lib/auth/session";
+import { isTrustedMutationRequest, readJsonBody, RequestBodyError } from "../../../lib/http/request";
 import {
   editPollAdmin,
   getAdminPollEditHistory,
@@ -13,11 +14,6 @@ function json(body, status = 200) {
     status,
     headers: { "Cache-Control": "no-store" }
   });
-}
-
-function sameOrigin(request) {
-  const origin = request.headers.get("origin");
-  return !origin || origin === new URL(request.url).origin;
 }
 
 async function getAdmin(request) {
@@ -50,7 +46,7 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  if (!sameOrigin(request)) {
+  if (!isTrustedMutationRequest(request, { allowAuthorizationHeader: true })) {
     return json({ ok: false, error: "invalid_origin" }, 403);
   }
 
@@ -59,7 +55,17 @@ export async function POST(request) {
     return json({ ok: false, error: "admin_required" }, 403);
   }
 
-  const body = await request.json().catch(() => null);
+  let body;
+
+  try {
+    body = await readJsonBody(request, { maxBytes: 16_384 });
+  } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return json({ ok: false, error: error.code }, error.status);
+    }
+    throw error;
+  }
+
   const pollId = typeof body?.pollId === "string" ? body.pollId : "";
   const action = body?.action;
   const allowedActions = ["publish", "reject", "unpublish", "restore", "edit"];
@@ -132,7 +138,7 @@ export async function POST(request) {
                     ? "invalid_options"
                     : error.code === "23514"
                       ? "invalid_poll_copy"
-                : "admin_action_failed"
+                      : "admin_action_failed"
     }, error.status || 500);
   }
 }

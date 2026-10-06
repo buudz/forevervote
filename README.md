@@ -8,7 +8,9 @@ This repository is published so the community can inspect how authentication, vo
 
 ForeverVote uses Battle.net OAuth to establish a stable Battle.net account identity. The browser never chooses its own ForeverVote user ID. Authentication is handled by the Next.js server, and production secrets stay in deployment environment variables.
 
-Votes and polls are stored in Supabase. Browser roles do not receive direct table access; server routes use the server-only service-role credential after validating the signed ForeverVote session. Database constraints and triggers provide a second layer of integrity checks.
+Votes and polls are stored in Supabase. Browser roles do not receive direct table access; server routes use the server-only service-role credential after validating the signed ForeverVote session. Database constraints, transactional RPCs, and triggers provide a second layer of integrity checks.
+
+Public poll URLs use random opaque identifiers rather than sequential database identifiers. Older numeric and title-based links are accepted only for backwards-compatible redirects. These URL identifiers are a routing/privacy measure, not an authorization boundary.
 
 The live site exposes its Vercel Git commit in the footer and at `/api/version`, allowing visitors to compare the deployed build with the public source.
 
@@ -55,14 +57,14 @@ See [docs/compliance-baseline.md](docs/compliance-baseline.md) for the current p
 Use Node.js 22 or newer.
 
 ```sh
-npm install
+npm ci
 npm run dev
 ```
 
-Production build:
+Quality checks and production build:
 
 ```sh
-npm run build
+npm run check
 ```
 
 Copy `.env.example` and provide the required Battle.net OAuth and Supabase environment variables. Never commit real credentials.

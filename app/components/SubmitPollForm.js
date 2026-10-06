@@ -163,7 +163,7 @@ export function SubmitPollForm() {
       <input
         type="text"
         minLength="10"
-        maxLength="180"
+        maxLength="90"
         required
         aria-invalid={title.length > 90}
         value={title}

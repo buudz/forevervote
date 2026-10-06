@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { pollCategories, polls as staticPolls, withFallbackOptions } from "../data/polls";
 import { PollCard } from "./PollCard";
 
@@ -90,6 +90,17 @@ function openShareWindow(url) {
   window.open(url, "_blank", "noopener,noreferrer,width=760,height=620");
 }
 
+async function fetchPollsForSort(sort) {
+  const params = new URLSearchParams({ sort, filter: "all" });
+  const response = await fetch(`/api/polls?${params.toString()}`, { cache: "no-store" });
+  const data = await response.json().catch(() => ({}));
+
+  return {
+    ok: Boolean(response.ok && data.databaseReady),
+    polls: Array.isArray(data.polls) ? data.polls : []
+  };
+}
+
 export function PollsSection({ initialPolls = fallbackPolls, initialDatabaseReady = false }) {
   const [category, setCategory] = useState("All");
   const [sort, setSort] = useState("explore");
@@ -109,25 +120,18 @@ export function PollsSection({ initialPolls = fallbackPolls, initialDatabaseRead
   const authReady = !auth.loading;
   const canVote = Boolean(auth.authenticated && pollState.databaseReady);
 
-  async function loadPolls(nextSort = sort, nextVoteFilter = voteFilter, active = true) {
-    const params = new URLSearchParams({ sort: nextSort, filter: "all" });
-    const pollsResponse = await fetch(`/api/polls?${params.toString()}`, { cache: "no-store" });
+  const loadPolls = useCallback(async (nextSort) => {
+    const result = await fetchPollsForSort(nextSort);
 
-    if (!active) {
-      return;
-    }
-
-    const pollsData = await pollsResponse.json();
-
-    if (!pollsResponse.ok || !pollsData.databaseReady) {
+    if (!result.ok) {
       setPollState({ loading: false, databaseReady: false, polls: fallbackPolls });
       setStatusMessage("Live voting is temporarily unavailable. The polls remain visible while the service reconnects.");
       return;
     }
 
-    setPollState({ loading: false, databaseReady: true, polls: pollsData.polls });
+    setPollState({ loading: false, databaseReady: true, polls: result.polls });
     setStatusMessage("");
-  }
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -158,19 +162,31 @@ export function PollsSection({ initialPolls = fallbackPolls, initialDatabaseRead
 
   useEffect(() => {
     let active = true;
-    setPollState((current) => ({ ...current, loading: true }));
 
-    loadPolls(sort, voteFilter, active).catch(() => {
-      if (active) {
-        setPollState({ loading: false, databaseReady: false, polls: fallbackPolls });
-        setStatusMessage("Could not load live polls. Try refreshing in a moment.");
-      }
-    });
+    fetchPollsForSort(sort)
+      .then((result) => {
+        if (!active) return;
+
+        if (!result.ok) {
+          setPollState({ loading: false, databaseReady: false, polls: fallbackPolls });
+          setStatusMessage("Live voting is temporarily unavailable. The polls remain visible while the service reconnects.");
+          return;
+        }
+
+        setPollState({ loading: false, databaseReady: true, polls: result.polls });
+        setStatusMessage("");
+      })
+      .catch(() => {
+        if (active) {
+          setPollState({ loading: false, databaseReady: false, polls: fallbackPolls });
+          setStatusMessage("Could not load live polls. Try refreshing in a moment.");
+        }
+      });
 
     return () => {
       active = false;
     };
-  }, [sort, voteFilter]);
+  }, [sort]);
 
   useEffect(() => {
     if (!sharePayload) {
@@ -336,7 +352,7 @@ export function PollsSection({ initialPolls = fallbackPolls, initialDatabaseRead
         throw new Error(data.error || "vote_failed");
       }
 
-      await loadPolls(sort, voteFilter);
+      await loadPolls(sort);
       setStatusMessage(
         isRetracting
           ? "Selection removed."
@@ -484,6 +500,8 @@ export function PollsSection({ initialPolls = fallbackPolls, initialDatabaseRead
           >×</button>
         </div>
 
+        {/* Generated share cards are intentionally rendered as raw images so the preview is exact. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={sharePayload.imageUrl} alt="" aria-hidden="true" style={sharePreviewStyle} />
 
         <div style={shareActionsStyle}>

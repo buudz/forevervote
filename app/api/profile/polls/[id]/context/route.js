@@ -1,11 +1,7 @@
 import { NextResponse } from "next/server";
 import { readSignedSession, SESSION_COOKIE } from "../../../../../lib/auth/session";
+import { isTrustedMutationRequest, readJsonBody, RequestBodyError } from "../../../../../lib/http/request";
 import { addOwnPollContextUpdate } from "../../../../../lib/supabase/profile";
-
-function sameOrigin(request) {
-  const origin = request.headers.get("origin");
-  return !origin || origin === new URL(request.url).origin;
-}
 
 function json(body, status = 200) {
   return NextResponse.json(body, {
@@ -15,7 +11,7 @@ function json(body, status = 200) {
 }
 
 export async function POST(request, context) {
-  if (!sameOrigin(request)) {
+  if (!isTrustedMutationRequest(request)) {
     return json({ ok: false, error: "invalid_origin" }, 403);
   }
 
@@ -25,7 +21,17 @@ export async function POST(request, context) {
   }
 
   const { id } = await context.params;
-  const bodyJson = await request.json().catch(() => null);
+  let bodyJson;
+
+  try {
+    bodyJson = await readJsonBody(request, { maxBytes: 2_048 });
+  } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return json({ ok: false, error: error.code }, error.status);
+    }
+    throw error;
+  }
+
   const body = typeof bodyJson?.body === "string" ? bodyJson.body.trim() : "";
 
   if (body.length < 3 || body.length > 500 || /[<>]/.test(body)) {

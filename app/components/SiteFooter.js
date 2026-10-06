@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 const SOURCE_REPO = "https://github.com/buudz/forevervote";
 
 export function SiteFooter() {
@@ -7,11 +9,11 @@ export function SiteFooter() {
   return <footer className="footer">
     <div className="wrap footer-inner">
       <div className="footer-brand">
-        <img
+        <Image
           className="footer-logo"
           src="/fv-scroll-mark-final.webp"
-          width="38"
-          height="38"
+          width={38}
+          height={38}
           alt=""
           aria-hidden="true"
           style={{ width: 38, height: 38, objectFit: "contain", flex: "0 0 auto" }}

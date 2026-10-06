@@ -128,13 +128,6 @@ function PollAdminCard({ poll, actions, busy, onAction, onEdit, trashLabel = "" 
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState("");
 
-  useEffect(() => {
-    setTitle(poll.title);
-    setRationale(poll.rationale || "");
-    setAllowMultipleAnswers(Boolean(poll.allowMultipleAnswers));
-    setOptions((poll.options || []).map((option) => option.text));
-  }, [poll.title, poll.rationale, poll.allowMultipleAnswers, poll.options]);
-
   const meta = [
     poll.creatorBattleTag,
     formatDate(poll.createdAt),
@@ -366,10 +359,6 @@ function AdminSection({
     return sortPolls(matching, sort);
   }, [polls, query, sort]);
 
-  useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
-  }, [query, sort, polls.length]);
-
   const visiblePolls = filteredPolls.slice(0, visibleCount);
   const sortOptions = expirySort
     ? [{ value: "expiring", label: "Expiring soon" }, ...SORT_OPTIONS]
@@ -405,13 +394,19 @@ function AdminSection({
                 <input
                   type="search"
                   value={query}
-                  onChange={(event) => setQuery(event.target.value)}
+                  onChange={(event) => {
+                    setQuery(event.target.value);
+                    setVisibleCount(PAGE_SIZE);
+                  }}
                   placeholder="Search title, category, player or option…"
                 />
               </label>
               <label className="admin-sort">
                 <span>Sort</span>
-                <select value={sort} onChange={(event) => setSort(event.target.value)}>
+                <select value={sort} onChange={(event) => {
+                  setSort(event.target.value);
+                  setVisibleCount(PAGE_SIZE);
+                }}>
                   {sortOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </select>
               </label>
@@ -452,6 +447,33 @@ function AdminSection({
   </section>;
 }
 
+async function fetchAdminPanelData() {
+  const authResponse = await fetch("/api/auth/me", { cache: "no-store" });
+  const authData = await authResponse.json().catch(() => ({}));
+
+  if (!authData.admin) {
+    return { authData, queues: null };
+  }
+
+  const response = await fetch("/api/admin/polls", { cache: "no-store" });
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok || !data.ok) {
+    throw new Error("Could not load the admin poll lists.");
+  }
+
+  return {
+    authData,
+    queues: {
+      loading: false,
+      submissions: data.submissions || [],
+      live: data.live || [],
+      rejected: data.rejected || [],
+      unpublished: data.unpublished || []
+    }
+  };
+}
+
 export function AdminPollsPanel() {
   const [auth, setAuth] = useState({ loading: true, authenticated: false, admin: false });
   const [queues, setQueues] = useState({
@@ -465,36 +487,41 @@ export function AdminPollsPanel() {
   const [busy, setBusy] = useState("");
 
   async function load() {
-    const authResponse = await fetch("/api/auth/me", { cache: "no-store" });
-    const authData = await authResponse.json().catch(() => ({}));
-    setAuth({ loading: false, ...authData });
-
-    if (!authData.admin) {
-      setQueues((current) => ({ ...current, loading: false }));
-      return;
-    }
-
-    const response = await fetch("/api/admin/polls", { cache: "no-store" });
-    const data = await response.json().catch(() => ({}));
-
-    if (!response.ok || !data.ok) {
-      throw new Error("Could not load the admin poll lists.");
-    }
-
-    setQueues({
+    const result = await fetchAdminPanelData();
+    setAuth({ loading: false, ...result.authData });
+    setQueues(result.queues || {
       loading: false,
-      submissions: data.submissions || [],
-      live: data.live || [],
-      rejected: data.rejected || [],
-      unpublished: data.unpublished || []
+      submissions: [],
+      live: [],
+      rejected: [],
+      unpublished: []
     });
   }
 
   useEffect(() => {
-    load().catch((error) => {
-      setQueues((current) => ({ ...current, loading: false }));
-      setMessage(error.message);
-    });
+    let active = true;
+
+    fetchAdminPanelData()
+      .then((result) => {
+        if (!active) return;
+        setAuth({ loading: false, ...result.authData });
+        setQueues(result.queues || {
+          loading: false,
+          submissions: [],
+          live: [],
+          rejected: [],
+          unpublished: []
+        });
+      })
+      .catch((error) => {
+        if (!active) return;
+        setQueues((current) => ({ ...current, loading: false }));
+        setMessage(error.message);
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   async function editPoll(pollId, title, rationale, allowMultipleAnswers, options) {
@@ -594,8 +621,7 @@ export function AdminPollsPanel() {
   if (!auth.admin) {
     return <div className="admin-panel admin-gate">
       <h2>This account is not an admin yet</h2>
-      <p>Your current Battle.net account ID is <code>{auth.user?.battlenetAccountId || "unknown"}</code>.</p>
-      <p>Admin access can be granted through the ForeverVote admin allowlist.</p>
+      <p>Admin access is granted through the ForeverVote server-side admin allowlist.</p>
     </div>;
   }
 

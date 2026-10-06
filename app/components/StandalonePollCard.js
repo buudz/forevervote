@@ -3,6 +3,16 @@
 import { useEffect, useState } from "react";
 import { PollCard } from "./PollCard";
 
+async function fetchPollData(slug) {
+  const response = await fetch(`/api/polls/${encodeURIComponent(slug)}`, { cache: "no-store" });
+  const data = await response.json().catch(() => ({}));
+
+  return {
+    ok: Boolean(response.ok && data.ok && data.poll),
+    poll: data.poll || null
+  };
+}
+
 export function StandalonePollCard({ initialPoll }) {
   const [auth, setAuth] = useState({ loading: true, authenticated: false });
   const [poll, setPoll] = useState(initialPoll);
@@ -14,21 +24,16 @@ export function StandalonePollCard({ initialPoll }) {
   const authReady = !auth.loading;
   const canVote = Boolean(auth.authenticated && databaseReady);
 
-  async function loadPoll(isActive = () => true) {
-    const response = await fetch(`/api/polls/${encodeURIComponent(initialPoll.slug)}`, { cache: "no-store" });
-    const data = await response.json().catch(() => ({}));
+  async function loadPoll() {
+    const result = await fetchPollData(initialPoll.slug);
 
-    if (!isActive()) {
-      return;
-    }
-
-    if (!response.ok || !data.ok || !data.poll) {
+    if (!result.ok) {
       setDatabaseReady(false);
       setStatusMessage("Live voting is temporarily unavailable. Try refreshing in a moment.");
       return;
     }
 
-    setPoll(data.poll);
+    setPoll(result.poll);
     setDatabaseReady(true);
   }
 
@@ -37,23 +42,32 @@ export function StandalonePollCard({ initialPoll }) {
 
     Promise.all([
       fetch("/api/auth/me", { cache: "no-store" }).then((response) => response.json()),
-      loadPoll(() => active)
+      fetchPollData(initialPoll.slug)
     ])
-      .then(([authData]) => {
-        if (active) {
-          setAuth({ loading: false, ...authData });
+      .then(([authData, pollResult]) => {
+        if (!active) return;
+
+        setAuth({ loading: false, ...authData });
+
+        if (!pollResult.ok) {
+          setDatabaseReady(false);
+          setStatusMessage("Live voting is temporarily unavailable. Try refreshing in a moment.");
+          return;
         }
+
+        setPoll(pollResult.poll);
+        setDatabaseReady(true);
       })
       .catch(() => {
-        if (active) {
-          setAuth({ loading: false, authenticated: false });
-        }
+        if (!active) return;
+        setAuth({ loading: false, authenticated: false });
+        setDatabaseReady(false);
       });
 
     return () => {
       active = false;
     };
-  }, []);
+  }, [initialPoll.slug]);
 
   async function submitVote(pollSlug, optionId) {
     if (!canVote) {
@@ -81,7 +95,7 @@ export function StandalonePollCard({ initialPoll }) {
         throw new Error(data.error || "vote_failed");
       }
 
-      await loadPoll(() => true);
+      await loadPoll();
       setStatusMessage(isRetracting
         ? "Selection removed."
         : (poll.allowMultipleAnswers ? "Selection saved." : "Vote saved."));
