@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export function AuthStatus() {
@@ -29,7 +30,6 @@ export function AuthStatus() {
 
   useEffect(() => {
     if (!auth.admin) {
-      setPendingCount(0);
       return undefined;
     }
 
@@ -104,10 +104,10 @@ export function AuthStatus() {
         </span>}
       </a>
     </>}
-    <a className="auth-user" href="/profile" aria-label="Open your ForeverVote profile">
+    <Link className="auth-user" href="/profile" aria-label="Open your ForeverVote profile">
       <strong>{auth.user?.battletag || "Battle.net user"}</strong>
       <small>View profile</small>
-    </a>
+    </Link>
     <form className="auth-logout-form" action="/api/auth/logout" method="post">
       <button className="auth-logout" type="submit">Logout</button>
     </form>
